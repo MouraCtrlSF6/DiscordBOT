@@ -1,0 +1,10 @@
+#dependencies
+/node_modules
+
+#dev-files
+/infos.json
+/LocalMusic/
+/tests.js
+
+#env-fies
+/.env

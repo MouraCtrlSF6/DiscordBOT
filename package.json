@@ -1,0 +1,30 @@
+{
+  "name": "fbot",
+  "version": "1.0.0",
+  "description": "A discord bot created in order to listen to music and be able to interact with the user",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "music",
+    "games",
+    "interactions"
+  ],
+  "author": "Lucas Moura da Silva",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.5.3",
+    "axios": "^0.26.0",
+    "discord-ytdl-core": "^5.0.4",
+    "discord.js": "^12.5.3",
+    "dotenv": "^16.0.0",
+    "ffmpeg-static": "^4.4.1",
+    "merge-options": "^3.0.4",
+    "node-fetch": "^3.2.0",
+    "spotify-url-info": "^2.2.6",
+    "ytdl-core": "^4.10.1",
+    "ytpl": "^2.2.3",
+    "ytsr": "^3.6.0"
+  }
+}
