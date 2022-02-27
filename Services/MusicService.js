@@ -37,9 +37,12 @@ class MusicService {
 
   _clear() {
     this.currentId = 0
-    this.dispatcher.destroy()
-    this.dispatcher = null
     this.queueList = []
+
+    if(this.dispatcher !== null) {
+      this.dispatcher.destroy()
+      this.dispatcher = null
+    }
   }
 
   _getStream(id) {
