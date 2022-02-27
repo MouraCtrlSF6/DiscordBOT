@@ -28,7 +28,7 @@ class Bot {
       {
         id: 4,
         callable: '--leave',
-        description: 'Order BOT to leave the voice channel',
+        description: 'Order BOT to leave the voice channel and clears queue.',
         exec: (args) => this.leave(args),
       },
       {
@@ -54,6 +54,12 @@ class Bot {
         callable: '--stop',
         description: 'Stops the current music and clears the track queue',
         exec: () => this.stop(),
+      },
+      {
+        id: 9,
+        callable: '--skip',
+        description: 'Skips to the next track on queue.',
+        exec: () => this.skip(),
       },
     ]
   }
@@ -87,12 +93,15 @@ class Bot {
     const { voice } = this.msg.member
     const { channel } = voice
 
-    channel.leave()
-    return `Left ${channel.name}`
+    return MusicService.leave(channel)
   } 
 
   stop() {
     return MusicService.stop()
+  }
+
+  skip() {
+    return MusicService.skip(this.msg)
   }
 
   exec() {

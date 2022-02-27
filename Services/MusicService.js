@@ -13,11 +13,40 @@ class MusicService {
     this.dispatcher = null
   }
 
-  getStream(id) {
-    return ytdl(this.queueList[id].url, { filter: 'audioonly' })
+  _restart(connection, msg) {
+    this.streamOptions.seek = this.dispatcher.streamTime / 1000
+    this.dispatcher.destroy()
+    this.dispatcher = null
+    this._playerManager(connection, msg)
+  } 
+
+  async _connect(msg) {
+    const { voice } = msg.member
+    if(!voice.channelID) {
+      return "You must be connected to a voice channel to play a music!"
+    }
+
+    const { channel } = voice
+    const connection = await channel.join()
+
+    return {
+      msg,
+      connection
+    }
   }
 
-  playSong(stream, connection) {
+  _clear() {
+    this.currentId = 0
+    this.dispatcher.destroy()
+    this.dispatcher = null
+    this.queueList = []
+  }
+
+  _getStream(id) {
+    return ytdl(this.queueList[id].url, { filter: 'audioonly', quality: 'highestaudio' })
+  }
+
+  _playSong(stream, connection) {
     this.dispatcher = connection.play(stream, this.streamOptions)
 
     return new Promise((resolve, reject) => {
@@ -31,25 +60,25 @@ class MusicService {
     })
   }
 
-  async playerManager(connection, msg) {
+  async _playerManager(connection, msg) {
     if(!this.dispatcher) {
-      const stream = await this.getStream(this.currentId);
+      const stream = await this._getStream(this.currentId);
 
-      this.playSong(stream, connection)
+      this._playSong(stream, connection)
         .then(() => {
           if(!!this.queueList[this.currentId+1]) {
             this.currentId++
             display(`Now playing: ${this.queueList[this.currentId].name}`, msg)
-            this.playerManager(connection, msg)
+            this._playerManager(connection, msg)
           }
           else {
-            this.queueList = []
+            this._clear()
             display("All tracks were played!", msg)
           }
         })
         .catch((err) => {
-          console.error("An error has ocurred: ", err)
-          display("An error has ocurred.")
+          console.error("An error has occurred. Retrying connection...\n", err)
+          this._restart(connection, msg)
         })
 
         return `Now playing: ${this.queueList[this.currentId].name}`
@@ -59,13 +88,11 @@ class MusicService {
   }
 
   async play(msg, musicUrl) {
-    const { voice } = msg.member
-    if(!voice.channelID) {
-      return "You must be connected to a voice channel to play a music!"
-    }
+    const { connection } = await this._connect(msg)
 
-    const { channel } = voice
-    const connection = await channel.join()
+    if(!msg.embeds[0]) {
+      return "Sorry, can you repeat please?"
+    }
 
     this.queueList.push({
       id: this.queueList.length,
@@ -73,7 +100,42 @@ class MusicService {
       url: musicUrl
     })
 
-    return this.playerManager(connection, msg)
+    return this._playerManager(connection, msg)
+  }
+
+  async skip(msg) {
+    const { connection } = await this._connect(msg)
+
+    if(!this.queueList[this.currentId+1]) {
+      this._clear()
+      return "No tracks left."
+    }
+
+    this.currentId++;
+    this.dispatcher = null
+    return this._playerManager(connection, msg);    
+  }
+
+  queue() {
+    return !this.queueList.length
+      ?  "No music in queue."
+      : "\n" + this.queueList
+      .reduce((list, item) => {
+        return `${list} \n${1 + item.id}: ${item.name} ${item.id === this.currentId ? '[current]' : ''}`
+      }, "")
+  }
+
+  stop() {
+    this._clear()
+
+    return "Stopped"
+  }
+
+  leave(channel) { 
+    this._clear()
+    channel.leave()
+
+    return `Left ${channel.name}`
   }
 
   async pause() {
@@ -93,23 +155,6 @@ class MusicService {
 
     this.dispatcher.resume()
     return "Resume"
-  }
-
-  queue() {
-    return !this.queueList.length
-      ?  "No music in queue."
-      : "\n" + this.queueList
-      .reduce((list, item) => {
-        return `${list} \n${1 + item.id}: ${item.name} ${item.id === this.currentId ? '[current]' : ''}`
-      }, "")
-  }
-
-  stop() {
-    this.dispatcher.destroy()
-    this.dispatcher = null
-    this.queueList = []
-
-    return "Stopped"
   }
 }
 

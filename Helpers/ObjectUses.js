@@ -15,19 +15,18 @@ class ObjectUses {
       if(Array.isArray(original)) {
         return ObjectUses.cloneArray(original)
       }
-      if(typeof original === 'object') {
+      if(typeof original === 'object' && original !== null) {
         return ObjectUses.cloneObj(original)
       }
       return original;
     }
     
     static mapper(obj, callback) {
-      if(typeof obj !== 'object') {
+      if(typeof obj !== 'object' || obj === null) {
         throw new Error(`'${obj}' is not an object.`)
       }
       
       const newObj = new Object()
-  
       for(let [value, key] of Object.entries(obj).map(item => item.reverse())) {
         newObj[key] = callback(value, key, obj)
       }
