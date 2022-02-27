@@ -1,8 +1,10 @@
 require('dotenv').config()
 const Discord = require('discord.js')
 const Bot = require('./Bots/fBot.js')
+const { display } = require('./Services/BotService.js')
 
 const client = new Discord.Client()
+
 const { BOT_TOKEN } = process.env
 
 client.on('ready', () => {
@@ -15,7 +17,7 @@ client.on('message', async (msg) => {
     if(prefix !== ".listen") return;
 
     const fBot = await new Bot(client, msg).exec()
-    msg.channel.send(fBot)
+    display(fBot, msg)
   } catch(e) {
     console.error(e.message)
   } 

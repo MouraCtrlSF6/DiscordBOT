@@ -17,7 +17,7 @@ class Bot {
         id: 2,
         callable: '--play',
         description: 'Play music provided as argument',
-        exec: (args) => this.music(args),
+        exec: (args) => this.play(args),
       },
       {
         id: 3,
@@ -30,7 +30,31 @@ class Bot {
         callable: '--leave',
         description: 'Order BOT to leave the voice channel',
         exec: (args) => this.leave(args),
-      }
+      },
+      {
+        id: 5,
+        callable: '--pause',
+        description: 'Pauses teh current music.',
+        exec: () => this.pause(),
+      },
+      {
+        id: 6,
+        callable: '--resume',
+        description: 'Resumes the current music',
+        exec: () => this.resume(),
+      },
+      {
+        id: 7,
+        callable: '--queue',
+        description: 'Show tracks listed on queue',
+        exec: () => this.queue(),
+      },
+      {
+        id: 8,
+        callable: '--stop',
+        description: 'Stops the current music and clears the track queue',
+        exec: () => this.stop(),
+      },
     ]
   }
 
@@ -39,9 +63,20 @@ class Bot {
     return '\n' + msg.join('\n');
   }
 
-  music(musicUrl) {
-    const data = MusicService.play(this.client, this.msg, ...musicUrl)
-    return data
+  queue() {
+    return MusicService.queue()
+  }
+
+  play(musicUrl) {
+    return MusicService.play(this.msg, ...musicUrl)
+  }
+
+  pause() {
+    return MusicService.pause()
+  }
+
+  resume() {
+    return MusicService.resume()
   }
 
   solve(args) {
@@ -55,6 +90,10 @@ class Bot {
     channel.leave()
     return `Left ${channel.name}`
   } 
+
+  stop() {
+    return MusicService.stop()
+  }
 
   exec() {
     const [ prefix, command, ...args ] = this.msg.content.split(' ')
