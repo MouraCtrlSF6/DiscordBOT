@@ -19,10 +19,8 @@ class MusicService {
     const { channel } = voice
     const connection = await channel.join()
 
-    const stream = ytdl(musicUrl, { filter: 'audioonly' })
+    const stream = await ytdl(musicUrl, { filter: 'audioonly' })
     const dispatcher = connection.play(stream, this.streamOptions)
-
-    console.log(dispatcher)
 
     dispatcher.on('end', () => {
       channel.leave()
