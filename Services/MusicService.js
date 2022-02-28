@@ -26,7 +26,8 @@ class MusicService {
   async _connect(msg) {
     const { voice } = msg.member
     if(!voice.channelID) {
-      return "You must be connected to a voice channel to play a music!"
+      display("You must be connected to a voice channel to play a music!", msg)
+      return;
     }
 
     const { channel } = voice
