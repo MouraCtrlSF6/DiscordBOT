@@ -52,7 +52,7 @@ class MusicService {
     return ytdl(this.queueList[id].url, { filter: 'audioonly', quality: 'highestaudio' })
   }
 
-  _playSong(stream, connection) {
+  _playSound(stream, connection) {
     this.dispatcher = connection.play(stream, this.streamOptions)
 
     return new Promise((resolve, reject) => {
@@ -70,7 +70,7 @@ class MusicService {
     if(!this.dispatcher) {
       const stream = await this._getStream(this.currentId);
 
-      this._playSong(stream, connection)
+      this._playSound(stream, connection)
         .then(() => {
           if(!!this.queueList[this.currentId+1]) {
             this.currentId++
