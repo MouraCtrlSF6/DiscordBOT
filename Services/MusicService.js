@@ -14,8 +14,8 @@ class MusicService {
   }
 
   _restart(connection, msg) {
-    this.streamOptions.seek = this.dispatcher.streamTime / 1000
     if(this.dispatcher !== null) {
+      this.streamOptions.seek = this.dispatcher.streamTime / 1000
       this.dispatcher.destroy()
       this.dispatcher = null
     }
