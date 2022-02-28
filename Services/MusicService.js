@@ -138,9 +138,9 @@ class MusicService {
     return "Stopped"
   }
 
-  leave(channel) { 
+  async leave(channel) { 
     this._clear()
-    channel.leave()
+    await channel.leave()
 
     return `Left ${channel.name}`
   }
