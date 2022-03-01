@@ -62,6 +62,7 @@ class MusicService {
       }),
       this.dispatcher.on('finish', () => {
         this.dispatcher = null
+        this.streamOptions.seek = 0
         resolve(true)
       })
     })
