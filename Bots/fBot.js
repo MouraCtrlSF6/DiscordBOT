@@ -105,7 +105,7 @@ class Bot {
   }
 
   exec() {
-    const [ prefix, command, ...args ] = this.msg.content.split(' ')
+    const [ command, ...args ] = this.msg.content.split(' ')
 
     const { exec } = this.commandList.find(c => c.callable === command)
     return exec(args);

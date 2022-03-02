@@ -13,8 +13,8 @@ client.on('ready', () => {
   
 client.on('message', async (msg) => {
   try {
-    const [ prefix ] = msg.content.split(' ')
-    if(prefix !== ".listen") return;
+    if(!msg.content.startsWith('--') || client.user.id === msg.author.id) 
+      return;
 
     const fBot = await new Bot(client, msg).exec()
     display(fBot, msg)
