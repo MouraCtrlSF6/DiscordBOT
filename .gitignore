@@ -2,7 +2,7 @@
 /node_modules
 
 #data-files
-*.json
+/Bots/Server/Servers.json
 
 #dev-files
 /infos.json
