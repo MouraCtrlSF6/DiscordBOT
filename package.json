@@ -12,6 +12,9 @@
     "games",
     "interactions"
   ],
+  "nodemonConfig": {
+    "ignore": ["./Bots/Server/Servers.json"]
+  },
   "author": "Lucas Moura da Silva",
   "license": "ISC",
   "dependencies": {

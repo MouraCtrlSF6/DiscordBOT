@@ -1,5 +1,7 @@
 const ytdl = require('ytdl-core');
 const { display } = require('./BotService.js')
+const FileHelper = require('../../Helpers/FileHelper.js')
+const fs = require('fs')
 
 class MusicService {
   constructor() {
@@ -8,19 +10,32 @@ class MusicService {
       volume: 1
     }
 
-    this.queueList = []
-    this.currentId = 0
-    this.dispatcher = null
+    this.server = {} 
   }
 
-  _restart(connection, msg) {
-    if(this.dispatcher !== null) {
-      this.streamOptions.seek = this.dispatcher.streamTime / 1000
-      this.dispatcher.destroy()
-      this.dispatcher = null
+  _getServerData(serverId) {
+    const serverFiles = FileHelper.requireFilesOnDir('Bots/Server');
+    if(!serverFiles.length) {
+      fs.writeFile('./Bots/Server/Servers.json', JSON.stringify([]), (err) => {
+        if(err) {
+          console.error(err.message)
+          throw err
+        }
+      })
     }
 
-    this._playerManager(connection, msg)
+    const servers = require('../Server/Servers.json')
+    this.server = servers.find((s) => s.id === serverId)
+  }
+
+  _restart(msg) {
+    if(this.server.dispatcher !== null) {
+      this.streamOptions.seek = this.server.dispatcher.streamTime / 1000
+      this.server.dispatcher.destroy()
+      this.server.dispatcher = null
+    }
+
+    this._trackStackManager(msg)
   } 
 
   async _connect(msg) {
@@ -31,137 +46,136 @@ class MusicService {
     }
 
     const { channel } = voice
-    const connection = await channel.join()
-
-    return {
-      msg,
-      connection
-    }
+    this.server.connection = await channel.join()
   }
 
   _clear() {
-    this.currentId = 0
-    this.queueList = []
+    this.server.currentId = 0
+    this.server.queueList = []
 
-    if(this.dispatcher !== null) {
-      this.dispatcher.destroy()
-      this.dispatcher = null
+    if(this.server.dispatcher !== null) {
+      this.server.dispatcher.destroy()
+      this.server.dispatcher = null
     }
   }
 
   _getStream(id) {
-    return ytdl(this.queueList[id].url, { filter: 'audioonly', quality: 'highestaudio' })
+    return ytdl(this.server.queueList[id].url, { filter: 'audioonly', quality: 'highestaudio' })
   }
 
-  _playSound(stream, connection) {
-    this.dispatcher = connection.play(stream, this.streamOptions)
+  _playSound(stream) {
+    this.server.dispatcher = this.server.connection.play(stream, this.streamOptions)
 
     return new Promise((resolve, reject) => {
-      this.dispatcher.on('error', (err) => {
+      this.server.dispatcher.on('error', (err) => {
         reject(err)
       }),
-      this.dispatcher.on('finish', () => {
-        this.dispatcher = null
+      this.server.dispatcher.on('finish', () => {
+        this.server.dispatcher = null
         this.streamOptions.seek = 0
         resolve(true)
       })
     })
   }
 
-  async _playerManager(connection, msg) {
-    if(!this.dispatcher) {
-      const stream = await this._getStream(this.currentId);
+  async _trackStackManager(msg) {
+    if(!!this.server.dispatcher) {
+      return `${this.server.queueList[this.server.queueList.length - 1].name} added to queue.`
+    }
+    
+    try {
+      display(`Now playing: ${this.server.queueList[this.server.currentId].name}`, msg)
+      const stream = await this._getStream(this.server.currentId);
+      await this._playSound(stream)
 
-      this._playSound(stream, connection)
-        .then(() => {
-          if(!!this.queueList[this.currentId+1]) {
-            this.currentId++
-            display(`Now playing: ${this.queueList[this.currentId].name}`, msg)
-            this._playerManager(connection, msg)
-          }
-          else {
-            this._clear()
-            display("All tracks were played!", msg)
-          }
-        })
-        .catch((err) => {
-          console.error("An error has occurred. Retrying connection...\n", err)
-          this._restart(connection, msg)
-        })
-
-        return `Now playing: ${this.queueList[this.currentId].name}`
+      if(!!this.server.queueList[this.server.currentId+1]) {
+        this.server.currentId++
+        await this._trackStackManager(msg)
+      }
+    } catch(err) {
+      console.error("An error has occurred. Retrying connection...\n", err)
+      this._restart(msg)
     }
 
-    return `${this.queueList[this.queueList.length - 1].name} added to queue.`
+    return "All tracks played!"
   }
 
-  async play(msg, musicUrl) {
-    const { connection } = await this._connect(msg)
+  async play(serverId, msg, musicUrl) {
+    await this._getServerData(serverId)
+    await this._connect(msg)
 
     if(!msg.embeds[0]) {
       return "Sorry, can you repeat please?"
     }
 
-    this.queueList.push({
-      id: this.queueList.length,
+    this.server.queueList.push({
+      id: this.server.queueList.length,
       name: msg.embeds[0].title,
       url: musicUrl
     })
 
-    return this._playerManager(connection, msg)
+    return this._trackStackManager(msg)
   }
 
-  async skip(msg) {
-    const { connection } = await this._connect(msg)
+  async skip(serverId, msg) {
+    await this._getServerData(serverId)
+    await this._connect(msg)
 
-    if(!this.queueList[this.currentId+1]) {
+    if(!this.server.queueList[this.server.currentId+1]) {
       this._clear()
       return "No tracks left."
     }
 
-    this.currentId++;
-    this.dispatcher = null
-    return this._playerManager(connection, msg);    
+    this.server.currentId++;
+    this.server.dispatcher = null
+    return this._trackStackManager(msg);    
   }
 
-  queue() {
-    return !this.queueList.length
+  async queue(serverId) {
+    await this._getServerData(serverId)
+    return !this.server.queueList.length
       ?  "No music in queue."
-      : "\n" + this.queueList
+      : "\n" + this.server.queueList
       .reduce((list, item) => {
-        return `${list} \n${1 + item.id}: ${item.name} ${item.id === this.currentId ? '[current]' : ''}`
+        return `${list} \n${1 + item.id}: ${item.name} ${
+          item.id === this.server.currentId ? '[current]' : ''
+        }`
       }, "")
   }
 
-  stop() {
+  async stop(serverId) {
+    await this._getServerData(serverId)
     this._clear()
 
     return "Stopped"
   }
 
-  async leave(channel) { 
+  async leave(serverId, channel) {
+    await this._getServerData(serverId) 
     this._clear()
     await channel.leave()
 
     return `Left ${channel.name}`
   }
 
-  async pause() {
-    if(!this.dispatcher) {
+  async pause(serverId) {
+    await this._getServerData(serverId)
+    if(!this.server.dispatcher) {
       return "Not playing any music right now."
     }
 
-    this.dispatcher.pause()
+    this.server.dispatcher.pause()
     return "Paused"
   }
 
-  async resume() {
-    // Bugs
-    if(!this.dispatcher) {
+  async resume(serverId) {
+    // Bugs node v16
+    await this._getServerData(serverId)
+    if(!this.server.dispatcher) {
       return "Not playing any music right now."
     }
 
-    this.dispatcher.resume()
+    this.server.dispatcher.resume()
     return "Resume"
   }
 }

@@ -2,7 +2,8 @@ const MusicService = require('./Services/MusicService.js')
 const CommandsService = require('../Services/Commands.js')
 
 class Bot {
-  constructor(client, msg) {
+  constructor(client, msg, server) {
+    this.server = server
     this.client = client
     this.msg = msg
     this.botId = this.client.user.id
@@ -21,19 +22,19 @@ class Bot {
   }
 
   queue() {
-    return MusicService.queue()
+    return MusicService.queue(this.server)
   }
 
   play(musicUrl) {
-    return MusicService.play(this.msg, ...musicUrl)
+    return MusicService.play(this.server, this.msg, ...musicUrl, )
   }
 
   pause() {
-    return MusicService.pause()
+    return MusicService.pause(this.server)
   }
 
   resume() {
-    return MusicService.resume()
+    return MusicService.resume(this.server)
   }
 
   solve(args) {
@@ -44,15 +45,15 @@ class Bot {
     const { voice } = this.msg.member
     const { channel } = voice
 
-    return MusicService.leave(channel)
+    return MusicService.leave(this.server, channel)
   } 
 
   stop() {
-    return MusicService.stop()
+    return MusicService.stop(this.server)
   }
 
   skip() {
-    return MusicService.skip(this.msg)
+    return MusicService.skip(this.server, this.msg)
   }
 
   async exec() {
