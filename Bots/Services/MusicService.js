@@ -36,7 +36,7 @@ class MusicService {
   
   _getCurrentId(ctrl = {}) {
     if(ctrl.skip) {
-      if(this.server.loops.track = this.server.currentId) {
+      if(this.server.loops.track === this.server.currentId) {
         delete this.server.loops.track
       }
 
