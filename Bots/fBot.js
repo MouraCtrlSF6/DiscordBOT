@@ -1,4 +1,5 @@
-const MusicService = require('../Services/MusicService.js')
+const MusicService = require('./Services/MusicService.js')
+const CommandsService = require('../Services/Commands.js')
 
 class Bot {
   constructor(client, msg) {
@@ -6,62 +7,12 @@ class Bot {
     this.msg = msg
     this.botId = this.client.user.id
 
-    this.commandList = [
-      {
-        id: 1,
-        callable: '--help',
-        description: 'Show all commands and their description',
-        exec: () => this.list(),
-      },
-      {
-        id: 2,
-        callable: '--play',
-        description: 'Play music provided as argument',
-        exec: (args) => this.play(args),
-      },
-      {
-        id: 3,
-        callable: '--solve',
-        description: 'Solves a simple mathematical expression',
-        exec: (args) => this.solve(args),
-      },
-      {
-        id: 4,
-        callable: '--leave',
-        description: 'Order BOT to leave the voice channel and clears queue.',
-        exec: (args) => this.leave(args),
-      },
-      {
-        id: 5,
-        callable: '--pause',
-        description: 'Pauses teh current music.',
-        exec: () => this.pause(),
-      },
-      {
-        id: 6,
-        callable: '--resume',
-        description: 'Resumes the current music',
-        exec: () => this.resume(),
-      },
-      {
-        id: 7,
-        callable: '--queue',
-        description: 'Show tracks listed on queue',
-        exec: () => this.queue(),
-      },
-      {
-        id: 8,
-        callable: '--stop',
-        description: 'Stops the current music and clears the track queue',
-        exec: () => this.stop(),
-      },
-      {
-        id: 9,
-        callable: '--skip',
-        description: 'Skips to the next track on queue.',
-        exec: () => this.skip(),
-      },
-    ]
+    this.commandList = []
+  }
+
+  async _getCommands() {
+    const { data: { data } } = await CommandsService.listAll()
+    return data
   }
 
   list() {
@@ -104,11 +55,12 @@ class Bot {
     return MusicService.skip(this.msg)
   }
 
-  exec() {
+  async exec() {
+    this.commandList = await this._getCommands()
     const [ command, ...args ] = this.msg.content.split(' ')
 
     const { exec } = this.commandList.find(c => c.callable === command)
-    return exec(args);
+    return eval(exec)(args);
   }
 }
 

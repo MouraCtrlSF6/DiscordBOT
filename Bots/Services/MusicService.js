@@ -1,5 +1,5 @@
 const ytdl = require('ytdl-core');
-const { display } = require('../Services/BotService.js')
+const { display } = require('./BotService.js')
 
 class MusicService {
   constructor() {

@@ -4,6 +4,7 @@
   "description": "A discord bot created in order to listen to music and be able to interact with the user",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
