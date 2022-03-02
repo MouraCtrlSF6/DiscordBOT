@@ -1,11 +1,13 @@
 #dependencies
 /node_modules
 
+#data-files
+*.json
+
 #dev-files
 /infos.json
 /LocalMusic/
 /tests.js
-/Bots/Server/Servers.json
 
 #env-fies
 /.env

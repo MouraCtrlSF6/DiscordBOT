@@ -39,7 +39,12 @@ client.on('ready', async () => {
       "dispatcher": null,
       "connection": null,
       "queueList": [], 
-      "currentId": 0
+      "currentId": 0,
+      "streamOptions": {
+        "seek": 0,
+        "volume": 1
+      },
+      "loops": {}
     }
   })
 

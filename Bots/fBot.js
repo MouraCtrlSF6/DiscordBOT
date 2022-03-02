@@ -56,6 +56,10 @@ class Bot {
     return MusicService.skip(this.server, this.msg)
   }
 
+  loop(args) {
+    return MusicService.loop(this.server, ...args)
+  }
+
   async exec() {
     this.commandList = await this._getCommands()
     const [ command, ...args ] = this.msg.content.split(' ')
