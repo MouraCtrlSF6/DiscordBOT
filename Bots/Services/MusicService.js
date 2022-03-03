@@ -92,6 +92,11 @@ class MusicService {
   _clear() {
     this.server.currentId = 0
     this.server.queueList = []
+    this.server.streamOptions = {
+      seek: 0,
+      valume: 1
+    }
+    this.server.loops = {}
 
     if(this.server.dispatcher !== null) {
       this.server.dispatcher.destroy()
