@@ -44,7 +44,8 @@ client.on('ready', async () => {
         "seek": 0,
         "volume": 1
       },
-      "loops": {}
+      "loops": {},
+      "searchOptions": []
     }
   })
 

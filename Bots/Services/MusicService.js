@@ -1,7 +1,8 @@
 const ytdl = require('ytdl-core');
+const ytsr = require('ytsr')
 const { display } = require('./BotService.js')
 const FileHelper = require('../../Helpers/FileHelper.js')
-const fs = require('fs')
+const fs = require('fs');
 
 class MusicService {
   constructor() {
@@ -21,7 +22,6 @@ class MusicService {
 
     const servers = require('../Server/Servers.json')
     this.server = servers.find((s) => s.id === serverId)
-
   }
 
   _restart(msg) {
@@ -81,8 +81,7 @@ class MusicService {
   async _connect(msg) {
     const { voice } = msg.member
     if(!voice.channelID) {
-      display("You must be connected to a voice channel to play a music!", msg)
-      return;
+      throw "You must be connected to a voice channel to play a music!"
     }
 
     const { channel } = voice
@@ -92,6 +91,7 @@ class MusicService {
   _clear() {
     this.server.currentId = 0
     this.server.queueList = []
+    this.server.searchOptions = []
 
     if(this.server.dispatcher !== null) {
       this.server.dispatcher.destroy()
@@ -145,21 +145,73 @@ class MusicService {
     return "All tracks played!"
   }
 
-  async play(serverId, msg, musicUrl) {
-    await this._getServerData(serverId)
-    await this._connect(msg)
-
-    if(!msg.embeds[0]) {
-      return "Sorry, can you repeat please?"
+  async _getMusicObject(msg, args) {
+    if(!!msg.embeds[0]) {
+      return {
+        name: msg.embeds[0].title,
+        url: msg.embeds[0].url
+      }
     }
 
-    this.server.queueList.push({
-      id: this.server.queueList.length,
-      name: msg.embeds[0].title,
-      url: musicUrl
-    })
+    try {
+      const url = new URL(args)
+      return "Please, can you repeat?"
+    } catch(error) {
+      if(Number.isNaN(Number(args)) || !this.server.searchOptions) {
+        const { items } = await ytsr(args, { limit: 5 })
+        this.server.searchOptions = items
+        const optionDisplay = this.server
+          .searchOptions
+          .map((item, index) => `${index + 1}. ${item.title}`)
+  
+        return {
+          url: null,
+          name: null,
+          optionsFeedback: `Options:\n${optionDisplay.join('\n')}`
+        }
+      } else {
+        const music = this.server
+          .searchOptions
+          .find((item, index) => index === Number(args) - 1)
 
-    return this._trackStackManager(msg)
+        return !!music 
+          ? {
+            url: music.url,
+            name: music.title,
+            optionsFeedback: null
+          }
+          : {
+            url: null,
+            name: null,
+            optionsFeedback: "Option not available"
+          }
+      }
+    }
+  }
+
+  async play(serverId, msg, musicUrl) {
+    try {
+      await this._getServerData(serverId)
+      await this._connect(msg)
+      const music = await this._getMusicObject(msg, musicUrl)
+
+      if(!!music.optionsFeedback) {
+        return music.optionsFeedback
+      }
+
+      this.server.searchOptions = []
+
+      this.server.queueList.push({
+        id: this.server.queueList.length,
+        name: music.name,
+        url: music.url
+      })
+  
+      return this._trackStackManager(msg)
+    } catch(e) {
+      console.log("Error received: ", e)
+      return e
+    }
   }
 
   async loop(serverId, command) {
@@ -231,7 +283,7 @@ class MusicService {
   }
 
   async resume(serverId) {
-    // Bugs node v16
+    // Bugs node v16, use node v12
     await this._getServerData(serverId)
     if(!this.server.dispatcher) {
       return "Not playing any music right now."

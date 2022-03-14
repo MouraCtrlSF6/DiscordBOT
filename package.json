@@ -13,7 +13,9 @@
     "interactions"
   ],
   "nodemonConfig": {
-    "ignore": ["./Bots/Server/Servers.json"]
+    "ignore": [
+      "./Bots/Server/Servers.json"
+    ]
   },
   "author": "Lucas Moura da Silva",
   "license": "ISC",
@@ -30,6 +32,7 @@
     "node-fetch": "^3.2.0",
     "play-dl": "^1.8.8",
     "spotify-url-info": "^2.2.6",
+    "ytdl": "^1.4.1",
     "ytdl-core": "^4.10.1",
     "ytpl": "^2.2.3",
     "ytsr": "^3.6.0"
