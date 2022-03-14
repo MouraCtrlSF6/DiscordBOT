@@ -9,28 +9,7 @@ const { BOT_TOKEN } = process.env
 
 const client = new Discord.Client()
 
-client.on('guildCreate', async (guild) => {
-  try {
-    await ServerService.join({
-      guild_id: guild.id,
-      name: guild.name
-    })
-    console.log('Joined: ', guild.name)
-  } catch(e) {
-    console.error(e.message)
-  }
-})
-
-client.on('guildDelete', async (guild) => {
-  try {
-    await ServerService.leave(guild.id)
-    console.log('Left ', guild.name)
-  } catch(e) {
-    console.error(e.message)
-  }
-})
-
-client.on('ready', async () => {
+async function loadServers() {
   const { data: { data } } = await ServerService.listAll()
   const servers = data.map((server) => {
     return {
@@ -59,6 +38,33 @@ client.on('ready', async () => {
       resolve()
     })
   })
+}
+
+client.on('guildCreate', async (guild) => {
+  try {
+    await ServerService.join({
+      guild_id: guild.id,
+      name: guild.name
+    })
+
+    await loadServers()
+    console.log('Joined: ', guild.name)
+  } catch(e) {
+    console.error(e.message)
+  }
+})
+
+client.on('guildDelete', async (guild) => {
+  try {
+    await ServerService.leave(guild.id)
+    console.log('Left ', guild.name)
+  } catch(e) {
+    console.error(e.message)
+  }
+})
+
+client.on('ready', async () => {
+  await loadServers()
 });
   
 client.on('message', async (msg) => {
