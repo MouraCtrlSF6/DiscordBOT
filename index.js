@@ -23,7 +23,8 @@ async function loadServers() {
         "seek": 0,
         "volume": 1
       },
-      "loops": {}
+      "loops": {},
+      "searchOptions": []
     }
   })
 
