@@ -118,6 +118,7 @@ class MusicService {
       this.server.dispatcher.on('finish', () => {
         this.server.dispatcher = null
         this.server.streamOptions.seek = 0
+
         resolve(true)
       })
     })
@@ -151,7 +152,11 @@ class MusicService {
   }
 
   async _getMusicObject(msg, args) {
-    if(!!msg.embeds[0]) {
+    msg.embeds = Array.isArray(msg.embeds)
+      ? msg.embeds
+      : []
+    
+    if(!!msg.embeds[0].title) {
       return {
         name: msg.embeds[0].title,
         url: msg.embeds[0].url
@@ -244,8 +249,9 @@ class MusicService {
       this._clear()
       return "No tracks left."
     }
-
+    
     this.server.currentId = this._getCurrentId({ skip: true })
+    this.server.streamOptions.seek = 0
     this.server.dispatcher = null
     return this._trackStackManager(msg);    
   }
