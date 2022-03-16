@@ -1,8 +1,7 @@
-const ytdl = require('ytdl-core');
-const ytsr = require('ytsr')
+const fs = require('fs')
 const { display } = require('./BotService.js')
 const FileHelper = require('../../Helpers/FileHelper.js')
-const fs = require('fs');
+const Youtube = require('./Youtube')
 
 class MusicService {
   constructor() {
@@ -45,6 +44,7 @@ class MusicService {
 
     if(Object.keys(this.server.loops).includes('track')
     && this.server.currentId === this.server.loops.track) {
+      console.log("Track is in loop")
       return this.server.currentId 
     }
 
@@ -104,10 +104,6 @@ class MusicService {
     }
   }
 
-  _getStream(id) {
-    return ytdl(this.server.queueList[id].url, { filter: 'audioonly', quality: 'highestaudio' })
-  }
-
   _playSound(stream) {
     this.server.dispatcher = this.server.connection.play(stream, this.server.streamOptions)
 
@@ -135,7 +131,7 @@ class MusicService {
       }
   
       display(`Now playing: ${this.server.queueList[this.server.currentId].name}`, msg)
-      const stream = await this._getStream(this.server.currentId);
+      const stream = await Youtube.getStream(this.server.queueList[this.server.currentId].url);
       await this._playSound(stream)
 
       if(!!this.server.queueList[this.server.currentId + 1] 
@@ -151,76 +147,81 @@ class MusicService {
     return "All tracks played!"
   }
 
-  async _getMusicObject(msg, args) {
-    msg.embeds = Array.isArray(msg.embeds)
-      ? msg.embeds
-      : []
-    
-    if(!!msg.embeds[0].title) {
-      return {
-        name: msg.embeds[0].title,
-        url: msg.embeds[0].url
-      }
-    }
-
+  _isURL(value) {
     try {
-      const url = new URL(args)
-      return "Please, can you repeat?"
-    } catch(error) {
-      if(Number.isNaN(Number(args)) || !this.server.searchOptions) {
-        const { items } = await ytsr(args, { limit: 5 })
-        this.server.searchOptions = items
-        const optionDisplay = this.server
-          .searchOptions
-          .map((item, index) => `${index + 1}. ${item.title}`)
-  
-        return {
-          url: null,
-          name: null,
-          optionsFeedback: `Options:\n${optionDisplay.join('\n')}`
-        }
-      } else {
-        const music = this.server
-          .searchOptions
-          .find((item, index) => index === Number(args) - 1)
-
-        return !!music 
-          ? {
-            url: music.url,
-            name: music.title,
-            optionsFeedback: null
-          }
-          : {
-            url: null,
-            name: null,
-            optionsFeedback: "Option not available"
-          }
-      }
+      const url = new URL(value)
+      return true
+    } catch { 
+      return false
     }
   }
 
-  async play(serverId, msg, musicUrl) {
+  async _getMusic(msg, args) {
+    if(!!this._isURL(args)) {
+      if(!msg.embeds[0]) {
+        throw "Sorry, can you repeat?"
+      }
+
+      return {
+        title: msg.embeds[0].title,
+        url:  msg.embeds[0].url
+      }
+    }
+    else {
+      if(!this.server.searchOptions.length || Number.isNaN(Number(args))) {
+        console.log("music: ", args)
+        this.server.searchOptions = []
+        const options = await Youtube.search(args)
+
+        this.server.searchOptions = options.items
+
+        return {
+          url: null,
+          title: null,
+          feedback: options.feedback
+        }
+      } 
+
+      const item = this.server
+        .searchOptions
+        .find((i, index) => index === Number(args) - 1)
+
+      return !!item
+        ? {
+          url: item.url,
+          title: item.title,
+          feedback: null
+        }
+        : {
+          url: null,
+          name: null,
+          feedback: "Option not available"
+        }
+    }
+  }
+
+  async play(serverId, msg, args) {
     try {
       await this._getServerData(serverId)
       await this._connect(msg)
-      const music = await this._getMusicObject(msg, musicUrl)
+      console.log("SearchOptions: ", this.server.searchOptions)
+      const music = await this._getMusic(msg, args)
 
-      if(!!music.optionsFeedback) {
-        return music.optionsFeedback
+      if(!!music.feedback) {
+        return music.feedback
       }
-
+      
       this.server.searchOptions = []
-
       this.server.queueList.push({
         id: this.server.queueList.length,
-        name: music.name,
+        name: music.title,
         url: music.url
       })
   
       return this._trackStackManager(msg)
     } catch(e) {
       console.log("Error received: ", e)
-      return e
+      return e.message
     }
   }
 
