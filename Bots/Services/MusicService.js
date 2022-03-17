@@ -112,7 +112,6 @@ class MusicService {
         reject(err)
       }),
       server.dispatcher.on('finish', () => {
-        display(`id: ${server.id}`, msg)
         server.dispatcher = null
         server.streamOptions.seek = 0
 
