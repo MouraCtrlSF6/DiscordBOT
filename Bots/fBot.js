@@ -25,8 +25,8 @@ class Bot {
     return MusicService.queue(this.server)
   }
 
-  play(musicUrl) {
-    return MusicService.play(this.server, this.msg, musicUrl.join(' '))
+  play(args) {
+    return MusicService.play(this.server, this.msg, args.join(' '))
   }
 
   pause() {
