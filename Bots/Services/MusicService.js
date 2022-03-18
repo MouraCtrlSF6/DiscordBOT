@@ -2,6 +2,7 @@ const fs = require('fs')
 const { display } = require('./BotService.js')
 const FileHelper = require('../../Helpers/FileHelper.js')
 const Youtube = require('./Youtube')
+const { ServerResponse } = require('http')
 
 class MusicService {
   constructor() {
@@ -10,9 +11,9 @@ class MusicService {
 
   _getServerData(serverId) {
     const serverFiles = FileHelper.requireFilesOnDir('Bots/Server');
-    if(!serverFiles.length) {
+    if (!serverFiles.length) {
       fs.writeFile('./Bots/Server/Servers.json', JSON.stringify([]), (err) => {
-        if(err) {
+        if (err) {
           console.error(err.message)
           throw err
         }
@@ -25,7 +26,7 @@ class MusicService {
   }
 
   _restart(server, msg) {
-    if(server.dispatcher !== null) {
+    if (server.dispatcher !== null) {
       server.streamOptions.seek = server.dispatcher.streamTime / 1000
       server.dispatcher.destroy()
       server.dispatcher = null
@@ -33,27 +34,27 @@ class MusicService {
 
     this._trackStackManager(server, msg)
   }
-  
+
   _getCurrentId(server, ctrl = {}) {
-    if(ctrl.skip) {
-      if(server.loops.track === server.currentId) {
+    if (ctrl.skip) {
+      if (server.loops.track === server.currentId) {
         delete server.loops.track
       }
 
       return server.currentId + 1
     }
 
-    if(Object.keys(server.loops).includes('track')
-    && server.currentId === server.loops.track) {
-      return server.currentId 
+    if (Object.keys(server.loops).includes('track')
+      && server.currentId === server.loops.track) {
+      return server.currentId
     }
 
-    if(Object.keys(server.loops).includes('queue')
-    && server.currentId === server.queueList.length - 1) {
+    if (Object.keys(server.loops).includes('queue')
+      && server.currentId === server.queueList.length - 1) {
       return 0
     }
 
-    return server.currentId  + 1
+    return server.currentId + 1
   }
 
   _loopId(server, trackId) {
@@ -80,7 +81,7 @@ class MusicService {
 
   async _connect(server, msg) {
     const { voice } = msg.member
-    if(!voice.channelID) {
+    if (!voice.channelID) {
       throw "You must be connected to a voice channel to play a music!"
     }
 
@@ -92,15 +93,18 @@ class MusicService {
     server.currentId = 0
     server.queueList = []
     server.searchOptions = []
+    server.loops = {}
+    this._stopPlaying(server)
+  }
+
+  _stopPlaying(server) {
+    if(!!server.dispatcher) {
+      server.dispatcher.destroy();
+      server.dispatcher = null
+    }
     server.streamOptions = {
       seek: 0,
-      valume: 1
-    }
-    server.loops = {}
-
-    if(server.dispatcher !== null) {
-      server.dispatcher.destroy()
-      server.dispatcher = null
+      volume: 1
     }
   }
 
@@ -122,24 +126,24 @@ class MusicService {
 
   async _trackStackManager(server, msg) {
     try {
-      if(!!server.dispatcher) {
+      if (!!server.dispatcher) {
         const index = server.queueList.length - 1 < 0
           ? 0
           : server.queueList.length - 1
 
         return `${server.queueList[index].name} added to queue.`
       }
-  
+
       display(`Now playing: ${server.queueList[server.currentId].name}`, msg)
       const stream = await Youtube.getStream(server.queueList[server.currentId].url);
       await this._playSound(stream, server, msg)
 
-      if(!!server.queueList[server.currentId + 1] 
-      || !!Object.keys(server.loops).length) {
+      if (!!server.queueList[server.currentId + 1]
+        || !!Object.keys(server.loops).length) {
         server.currentId = this._getCurrentId(server)
         await this._trackStackManager(server, msg)
       }
-    } catch(err) {
+    } catch (err) {
       console.error("An error has occurred. Retrying connection...\n", err)
       this._restart(server, msg)
     }
@@ -151,51 +155,119 @@ class MusicService {
     try {
       const url = new URL(value)
       return true
-    } catch { 
+    } catch {
       return false
     }
   }
 
-  async _getMusic(server, args, msg) {
-    if(!!this._isURL(args)) {
-      if(!msg.embeds[0]) {
-        throw "Sorry, can you repeat?"
-      }
-
-      return {
-        title: msg.embeds[0].title,
-        url:  msg.embeds[0].url
-      }
-    }
-    else {
-      if(!server.searchOptions.length || Number.isNaN(Number(args))) {
-        server.searchOptions = []
-        const options = await Youtube.search(args)
-
-        server.searchOptions = options.items
-
-        return {
-          url: null,
-          title: null,
-          feedback: options.feedback
+  async _getSongs(server, args, msg) {
+    try {
+      if(!!this._isURL(args)) {
+        if(!msg.embeds[0]) {
+          throw "Sorry, can you repeat?"
         }
-      } 
-
-      const item = server
-        .searchOptions
-        .find((i, index) => index === Number(args) - 1)
-
-      return !!item
-        ? {
-          url: item.url,
-          title: item.title,
+  
+        return {
+          data: [{
+            title: msg.embeds[0].title,
+            url:  msg.embeds[0].url
+          }],
           feedback: null
         }
-        : {
-          url: null,
-          name: null,
-          feedback: "Option not available"
+      }
+      else {
+        if(!server.searchOptions.length || Number.isNaN(Number(args))) {
+          server.searchOptions = []
+          const options = await Youtube.search(args)
+          server.searchOptions = options.items
+  
+          return {
+            data: [],
+            feedback: options.feedback
+          }
         }
+
+        const item = server
+          .searchOptions
+          .find((i, index) => index === Number(args) - 1)
+        
+        if(Youtube.isPlaylist(item.url)) {
+          const items = await Youtube.playlist(item.url)
+
+          return {
+            data: items,
+            feedback: null
+          }
+        }
+  
+        return !!item
+          ? {
+            data: [{
+              url: item.url,
+              title: item.title
+            }],
+            feedback: null
+          }
+          : {
+            data: [],
+            feedback: "Option not available"
+          }
+      }
+    } catch(e) {
+      throw e.message
+    }
+  }
+
+  async seek(id, msg, args) {
+    try {
+      const server = await this._getServerData(id)
+      await this._connect(server, msg)
+
+      if(Number.isNaN(Number(args))){
+        return "Provide the music id."
+      }
+
+      this._stopPlaying(server);
+
+      server.currentId = Number(args) - 1
+      
+      return this._trackStackManager(server, msg, )
+    } catch(e) {
+      console.log("Error received: ", e)
+      return e
+    }
+  }
+
+  async remove(id, msg, args) {
+    try {
+      const server = await this._getServerData(id)
+      await this._connect(server, msg)
+
+      for(let id of args) {
+        if(Number.isNaN(Number(id))) {
+          return `Track id '${id}' is not valid.`
+        }
+      }
+
+      args = args.map(id => Number(id))
+      server.queueList = server.queueList.filter(track => !args.includes(track.id + 1))
+      server.queueList = server.queueList.map((item, index) => {
+        return {
+          ...item,
+          id: index
+        }
+      })
+      
+      if(args.includes(server.currentId + 1)) {
+        this._stopPlaying(server)
+        display(`Tracks ${args} sucessfully removed from queue`, msg)
+        return this._trackStackManager(server, msg)
+      }
+
+      return `Tracks ${args} sucessfully removed from queue`
+    } catch(e) {
+      console.log("Error received: ", e)
+      return e
     }
   }
 
@@ -203,21 +275,24 @@ class MusicService {
     try {
       const server = await this._getServerData(id)
       await this._connect(server, msg)
-      const music = await this._getMusic(server, args, msg)
+      const songs = await this._getSongs(server, args, msg)
 
-      if(!!music.feedback) {
-        return music.feedback
+      if (!!songs.feedback) {
+        return songs.feedback
       }
-      
+
       server.searchOptions = []
-      server.queueList.push({
-        id: server.queueList.length,
-        name: music.title,
-        url: music.url
+      
+      songs.data.forEach(song => {
+        server.queueList.push({
+          id: server.queueList.length,
+          name: song.title,
+          url: song.url
+        })
       })
-  
+
       return this._trackStackManager(server, msg)
-    } catch(e) {
+    } catch (e) {
       console.log("Error received: ", e)
       return e
     }
@@ -242,30 +317,29 @@ class MusicService {
 
   async skip(id, msg) {
     const server = await this._getServerData(id)
-    await this._connect(msg)
+    await this._connect(server, msg)
 
-    if(!server.queueList[server.currentId + 1]) {
+    if (!server.queueList[server.currentId + 1]) {
       this._clear(server)
       return "No tracks left."
     }
-    
+
     server.currentId = this._getCurrentId(server, { skip: true })
     server.streamOptions.seek = 0
     server.dispatcher = null
 
-    return this._trackStackManager(server, msg);    
+    return this._trackStackManager(server, msg);
   }
 
   async queue(id) {
     const server = await this._getServerData(id)
     return !server.queueList.length
-      ?  "No music in queue."
+      ? "No music in queue."
       : "\n" + server.queueList
-      .reduce((list, item) => {
-        return `${list} \n${1 + item.id}: ${item.name} ${
-          item.id === server.currentId ? '[current]' : ''
-        }`
-      }, "")
+        .reduce((list, item) => {
+          return `${list} \n${1 + item.id}: ${item.name} ${item.id === server.currentId ? '[current]' : ''
+            }`
+        }, "")
   }
 
   async stop(id) {
@@ -276,7 +350,7 @@ class MusicService {
   }
 
   async leave(id, channel) {
-    const server = await this._getServerData(id) 
+    const server = await this._getServerData(id)
     this._clear(server)
     await channel.leave()
 
@@ -285,7 +359,7 @@ class MusicService {
 
   async pause(id) {
     const server = await this._getServerData(id)
-    if(!server.dispatcher) {
+    if (!server.dispatcher) {
       return "Not playing any music right now."
     }
 
@@ -294,9 +368,8 @@ class MusicService {
   }
 
   async resume(id) {
-    // Bugs node v16, use node v12
     const server = await this._getServerData(id)
-    if(!server.dispatcher) {
+    if (!server.dispatcher) {
       return "Not playing any music right now."
     }
 
