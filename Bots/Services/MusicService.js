@@ -31,7 +31,7 @@ class MusicService {
       server.dispatcher = null
     }
 
-    this._trackStackManager(server, msg)
+    this._trackStackManager(server, msg, true)
   }
 
   _getCurrentId(server, ctrl = {}) {
@@ -123,7 +123,7 @@ class MusicService {
     })
   }
 
-  async _trackStackManager(server, msg) {
+  async _trackStackManager(server, msg, continuity = false) {
     try {
       if (!!server.dispatcher) {
         const index = server.queueList.length - 1 < 0
@@ -133,7 +133,9 @@ class MusicService {
         return `${server.queueList[index].name} added to queue.`
       }
 
-      display(`Now playing: ${server.queueList[server.currentId].name}`, msg)
+      if(!continuity) {
+        display(`Now playing: ${server.queueList[server.currentId].name}`, msg)
+      }
       const stream = await Youtube.getStream(server.queueList[server.currentId].url);
       await this._playSound(stream, server, msg)
 
@@ -144,7 +146,7 @@ class MusicService {
       }
     } catch (err) {
       console.error("An error has occurred. Retrying connection...\n", err)
-      this._restart(server, msg)
+      await this._restart(server, msg)
     }
 
     return "All tracks played!"
@@ -230,7 +232,7 @@ class MusicService {
 
       server.currentId = Number(args) - 1
       
-      return this._trackStackManager(server, msg, )
+      return this._trackStackManager(server, msg)
     } catch(e) {
       console.log("Error received: ", e)
       return e
