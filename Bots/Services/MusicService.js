@@ -24,14 +24,12 @@ class MusicService {
     return this.servers.find(s => s.id === serverId)
   }
 
-  _restart(server, msg) {
+  _restart(server) {
     if (server.dispatcher !== null) {
       server.streamOptions.seek = server.dispatcher.streamTime / 1000
       server.dispatcher.destroy()
       server.dispatcher = null
     }
-
-    this._trackStackManager(server, msg, true)
   }
 
   _getCurrentId(server, ctrl = {}) {
@@ -146,7 +144,8 @@ class MusicService {
       }
     } catch (err) {
       console.error("An error has occurred. Retrying connection...\n", err)
-      await this._restart(server, msg)
+      this._restart(server)
+      await this._trackStackManager(server, msg, true)
     }
 
     return "All tracks played!"
