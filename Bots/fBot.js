@@ -18,6 +18,13 @@ class Bot {
 
   list() {
     const msg = this.commandList.map(c => `${c.callable}: ${c.description}`)
+    msg.sort((a, b) => {
+      if(a.length > b.length || b.includes('--help')) 
+        return 1
+      if(a.length < b.length)
+        return -1
+      return 0
+    })
     return '\n' + msg.join('\n');
   }
 
@@ -25,8 +32,16 @@ class Bot {
     return MusicService.queue(this.server)
   }
 
-  play(musicUrl) {
-    return MusicService.play(this.server, this.msg, musicUrl.join(' '))
+  play(args) {
+    return MusicService.play(this.server, this.msg, args.join(' '))
+  }
+
+  seek(args) {
+    return MusicService.seek(this.server, this.msg, ...args)
+  }
+
+  remove(args) {
+    return MusicService.remove(this.server, this.msg, args)
   }
 
   pause() {
