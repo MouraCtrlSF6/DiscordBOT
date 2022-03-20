@@ -295,7 +295,6 @@ class MusicService {
   }
 
   async resume(serverId) {
-    // Bugs node v16, use node v12
     await this._getServerData(serverId)
     if(!this.server.dispatcher) {
       return "Not playing any music right now."
