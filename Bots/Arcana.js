@@ -31,7 +31,7 @@ class Bot {
   }
 
   play(args) {
-    return MusicService.play(this.server, this.msg, args.join(' '))
+    return MusicService.play(this.server, args.join(' '), this.msg, this.client)
   }
 
   seek(args) {
