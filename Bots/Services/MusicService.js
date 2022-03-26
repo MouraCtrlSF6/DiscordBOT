@@ -1,7 +1,12 @@
 const fs = require('fs')
-const { display } = require('./BotService.js')
 const FileHelper = require('../../Helpers/FileHelper.js')
 const Youtube = require('./Youtube')
+
+const { 
+  display,
+  autoDelete,
+  embedMessage
+} = require('./BotService.js')
 
 class MusicService {
   constructor() {
@@ -128,11 +133,12 @@ class MusicService {
           ? 0
           : server.queueList.length - 1
 
-        return `${server.queueList[index].name} added to queue.`
+        autoDelete(`${server.queueList[index].name} added to queue.`, msg, server)
+        return;
       }
 
       if(!continuity) {
-        display(`Now playing: ${server.queueList[server.currentId].name}`, msg)
+        autoDelete(`Now playing: ${server.queueList[server.currentId].name}`, msg, server)
       }
       const stream = await Youtube.getStream(server.queueList[server.currentId].url);
       await this._playSound(stream, server, msg)
@@ -148,6 +154,7 @@ class MusicService {
       await this._trackStackManager(server, msg, true)
     }
 
+    this._clear(server)
     return "All tracks played!"
   }
 
@@ -166,11 +173,24 @@ class MusicService {
         if(!msg.embeds[0]) {
           throw "Sorry, can you repeat?"
         }
-  
+        
+        const info = await Youtube.getInfo(msg.embeds[0].url)
+        const time = new Date(null)
+
+        time.setSeconds(info.videoDetails.lengthSeconds)
+
+        const minutes = time.getMinutes() * (time.getHours() + 1)
+        const seconds = time.getSeconds()
+
+        const formatSeconds = seconds.toString().length < 2
+          ? `0${seconds}`
+          : seconds
+
         return {
           data: [{
             title: msg.embeds[0].title,
-            url:  msg.embeds[0].url
+            url:  msg.embeds[0].url,
+            duration: `${minutes}:${formatSeconds}`
           }],
           feedback: null
         }
@@ -204,7 +224,8 @@ class MusicService {
           ? {
             data: [{
               url: item.url,
-              title: item.title
+              title: item.title,
+              duration: item.duration
             }],
             feedback: null
           }
@@ -261,6 +282,7 @@ class MusicService {
       if(args.includes(server.currentId + 1)) {
         this._stopPlaying(server)
         display(`Tracks ${args} sucessfully removed from queue`, msg)
+
         return this._trackStackManager(server, msg)
       }
 
@@ -287,7 +309,8 @@ class MusicService {
         server.queueList.push({
           id: server.queueList.length,
           name: song.title,
-          url: song.url
+          url: song.url,
+          duration: song.duration
         })
       })
 
@@ -300,6 +323,10 @@ class MusicService {
 
   async loop(id, command) {
     const server = await this._getServerData(id)
+
+    if(!command) {
+      return "Please, provide the loop option. Type '--help' for more information."
+    }
 
     const loopOptions = {
       queue: () => this._loopQueue(server),
@@ -331,15 +358,29 @@ class MusicService {
     return this._trackStackManager(server, msg);
   }
 
-  async queue(id) {
+  async queue(id, msg, client) {
     const server = await this._getServerData(id)
+    const embed = {
+      title: 'Main queue',
+      color: '#0099ff',
+      thumbnail: {
+        url: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+      },  
+      fields: server.queueList.map(song => {
+        return {
+          name: `${song.id + 1}: ${song.name} ${server.currentId === song.id 
+            ? "[current]" 
+            : ""
+          }`,
+          value: `Song duration: ${song.duration}`,
+          inline: false
+        }
+      })
+    }
+
     return !server.queueList.length
       ? "No music in queue."
-      : "\n" + server.queueList
-        .reduce((list, item) => {
-          return `${list} \n${1 + item.id}: ${item.name} ${item.id === server.currentId ? '[current]' : ''
-            }`
-        }, "")
+      : embedMessage(embed, msg)
   }
 
   async stop(id) {

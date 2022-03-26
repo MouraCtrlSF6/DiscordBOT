@@ -6,8 +6,6 @@ class Bot {
     this.server = server
     this.client = client
     this.msg = msg
-    this.botId = this.client.user.id
-
     this.commandList = []
   }
 
@@ -29,7 +27,7 @@ class Bot {
   }
 
   queue() {
-    return MusicService.queue(this.server)
+    return MusicService.queue(this.server, this.msg, this.client)
   }
 
   play(args) {

@@ -11,7 +11,9 @@ class Youtube {
       const optionDisplay = items
         .map(
           (item, index) => 
-            `${index + 1}. ${item.title} ${!this.isPlaylist(item.url) ? `[${item.duration}]` : `(playlist - ${item.length} songs)`}`
+            `${index + 1}. ${
+              !this.isPlaylist(item.url) ? `${item.title} - [${item.duration}]` : `PLAYLIST: ${item.length} songs | ${item.title}`
+            }`
         )
   
       return {
@@ -73,6 +75,10 @@ class Youtube {
   
   getStream(url) {
     return ytdl(url, { filter: 'audioonly', quality: 'highestaudio' })
+  }
+
+  getInfo(url) {
+    return ytdl.getInfo(url, { download: false, limit: 1 })
   }
 }
 

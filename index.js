@@ -1,7 +1,7 @@
 require('dotenv').config()
 const fs = require('fs')
 const Discord = require('discord.js')
-const Bot = require('./Bots/fBot.js')
+const Bot = require('./Bots/Arcana.js')
 
 const ServerService = require('./Services/Servers.js')
 const { display } = require('./Bots/Services/BotService.js')
@@ -24,7 +24,8 @@ async function loadServers() {
         "volume": 1
       },
       "loops": {},
-      "searchOptions": []
+      "searchOptions": [],
+      "autoDeleteMessage": null
     }
   })
 

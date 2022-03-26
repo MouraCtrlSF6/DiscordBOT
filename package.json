@@ -17,6 +17,9 @@
       "./Bots/Server/Servers.json"
     ]
   },
+  "engines": {
+    "node": "12.x"
+  },
   "author": "Lucas Moura da Silva",
   "license": "ISC",
   "dependencies": {
