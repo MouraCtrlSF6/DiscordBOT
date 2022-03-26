@@ -133,12 +133,21 @@ class MusicService {
           ? 0
           : server.queueList.length - 1
 
-        autoDelete(`${server.queueList[index].name} added to queue.`, msg, server)
-        return;
+        const embeds = {
+          title: `${server.queueList[index].title} added to queue.`,
+          color: '#0085BD'
+        }
+        
+        return autoDelete(embeds, msg, server, 'added')
       }
 
       if(!continuity) {
-        autoDelete(`Now playing: ${server.queueList[server.currentId].name}`, msg, server)
+        const embeds = {
+          title: `Now playing: ${server.queueList[server.currentId].title}`,
+          color: '#0085BD'
+        }
+
+        autoDelete(embeds, msg, server, 'playing')
       }
       const stream = await Youtube.getStream(server.queueList[server.currentId].url);
       await this._playSound(stream, server, msg)
@@ -167,7 +176,37 @@ class MusicService {
     }
   }
 
-  async _getSongs(server, args, msg) {
+  _generateEmbeds(client, server, items, title) {
+    const thumbnailURL = `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+    
+    return {
+      title, 
+      color: '#0099ff',
+      thumbnail: {
+        url: thumbnailURL
+      }, 
+      fields: items.map((song, index) => {
+        const songId = Number.isNaN(Number(song.id))
+          ? index + 1
+          : song.id + 1
+
+        const infos = Youtube.isPlaylist(song.url) 
+          ? `PLAYLIST: ${song.length} songs.` 
+          : `Song duration: ${song.duration}`
+        
+        return {
+          name: `${songId}: ${song.title}`,
+          value: `${infos}   ${server.currentId === song.id 
+            ? "[current]" 
+            : ""
+          }`,
+          inline: false
+        }
+      })
+    }
+  }
+
+  async _getSongs(server, args, msg, client) {
     try {
       if(!!this._isURL(args)) {
         if(!msg.embeds[0]) {
@@ -199,11 +238,13 @@ class MusicService {
         if(!server.searchOptions.length || Number.isNaN(Number(args))) {
           server.searchOptions = []
           const options = await Youtube.search(args)
-          server.searchOptions = options.items
-  
+          server.searchOptions = options
+
+          const feedback = this._generateEmbeds(client, server, options, "Options")
+          
           return {
             data: [],
-            feedback: options.feedback
+            feedback,
           }
         }
 
@@ -293,14 +334,14 @@ class MusicService {
     }
   }
 
-  async play(id, msg, args) {
+  async play(id, args, msg, client) {
     try {
       const server = await this._getServerData(id)
       await this._connect(server, msg)
-      const songs = await this._getSongs(server, args, msg)
+      const songs = await this._getSongs(server, args, msg, client)
 
       if (!!songs.feedback) {
-        return songs.feedback
+        return autoDelete(songs.feedback, msg, server, 'options')
       }
 
       server.searchOptions = []
@@ -308,7 +349,7 @@ class MusicService {
       songs.data.forEach(song => {
         server.queueList.push({
           id: server.queueList.length,
-          name: song.title,
+          title: song.title,
           url: song.url,
           duration: song.duration
         })
@@ -360,27 +401,22 @@ class MusicService {
 
   async queue(id, msg, client) {
     const server = await this._getServerData(id)
-    const embed = {
-      title: 'Main queue',
-      color: '#0099ff',
-      thumbnail: {
-        url: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
-      },  
-      fields: server.queueList.map(song => {
-        return {
-          name: `${song.id + 1}: ${song.name} ${server.currentId === song.id 
-            ? "[current]" 
-            : ""
-          }`,
-          value: `Song duration: ${song.duration}`,
-          inline: false
-        }
-      })
-    }
+    const perPage = 10;
+    const calc = server.queueList.length / perPage
+    const totalPages = calc > parseInt(calc)
+      ?  parseInt(calc) + 1
+      : calc
+
+    const embeds = Array.apply(null, Array(totalPages)).map((_, page) => {
+      page += 1
+      const pageSongs = server.queueList.slice(perPage * (page - 1), page * perPage)
+
+      return this._generateEmbeds(client, server, pageSongs, 'Main queue')
+    })  
 
     return !server.queueList.length
       ? "No music in queue."
-      : embedMessage(embed, msg)
+      : embedMessage(embeds, msg)
   }
 
   async stop(id) {

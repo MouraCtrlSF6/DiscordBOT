@@ -25,7 +25,11 @@ async function loadServers() {
       },
       "loops": {},
       "searchOptions": [],
-      "autoDeleteMessage": null
+      "autoDeleteMessage": {
+        "playing": null,
+        "added": null,
+        "options": null
+      }
     }
   })
 

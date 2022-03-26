@@ -1,5 +1,6 @@
 
 const { MessageAttachment, MessageEmbed } = require('discord.js');
+const pagination = require('discord.js-pagination')
 
 class BotService {
   
@@ -19,21 +20,17 @@ class BotService {
     }
   }
 
-  static autoDelete(msgContent, msg, server) {
+  static autoDelete(embeds, msg, server, type) {
     try {
-      const embed = new MessageEmbed({
-        title: msgContent,
-        color: '#0085BD'
-      })
-
+      const embed = new MessageEmbed(embeds)
       const bomb = msg.channel.send(embed)
-
+      
       bomb 
         .then(result => {
-          if(!!server.autoDeleteMessage) {
-            server.autoDeleteMessage.delete()
+          if(!!server.autoDeleteMessage[type]) {
+            server.autoDeleteMessage[type].delete()
           }
-          server.autoDeleteMessage = result
+          server.autoDeleteMessage[type] = result
         })
         .catch(err => {
           console.log("Error while sending message: ", err.message)
@@ -45,10 +42,13 @@ class BotService {
     }
   }
 
-  static embedMessage(parameters, msg) {
+  static embedMessage(embeds, msg) {
     try {
-      const embed = new MessageEmbed(parameters)
-      return msg.channel.send(embed)
+      const pages = embeds.map(page => {
+        return new MessageEmbed(page)
+      })
+
+      return pagination(msg, pages)
     } catch(e) {
       console.error(e.message)
     }

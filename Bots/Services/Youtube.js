@@ -8,18 +8,8 @@ class Youtube {
   async search(args) {
     try {
       const { items } = await ytsr(args, { limit: 5 })
-      const optionDisplay = items
-        .map(
-          (item, index) => 
-            `${index + 1}. ${
-              !this.isPlaylist(item.url) ? `${item.title} - [${item.duration}]` : `PLAYLIST: ${item.length} songs | ${item.title}`
-            }`
-        )
   
-      return {
-        items: items,
-        feedback: `Options:\n${optionDisplay.join('\n')}`
-      }
+      return items
     } catch(e) {
       throw e
     }
