@@ -1,12 +1,10 @@
 const YoutubeService = require('./YoutubeService')
 const TrackService = require('./TrackService')
 const ServerService = require('./ServerService')
+const QueueService = require('./QueueService')
+const EmbedHelper = require('../../Helpers/EmbedHelper')
 
-const { 
-  display,
-  autoDelete,
-  embedMessage
-} = require('./BotService.js')
+const { display, autoDelete } = require('./BotService.js')
 
 class MusicService {
   constructor() {}
@@ -46,36 +44,6 @@ class MusicService {
     }
   }
 
-  _generateEmbeds(client, server, items, title) {
-    const thumbnailURL = `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
-    
-    return {
-      title, 
-      color: '#0099ff',
-      thumbnail: {
-        url: thumbnailURL
-      }, 
-      fields: items.map((song, index) => {
-        const songId = Number.isNaN(Number(song.id))
-          ? index + 1
-          : song.id + 1
-
-        const infos = YoutubeService.isPlaylist(song.url) 
-          ? `PLAYLIST: ${song.length} songs.` 
-          : `Song duration: ${song.duration}`
-        
-        return {
-          name: `${songId}: ${song.title}`,
-          value: `${infos}   ${server.currentId === song.id
-            ? "[current]" 
-            : ""
-          }`,
-          inline: false
-        }
-      })
-    }
-  }
-
   async _getSongs(server, args, msg, client) {
     try {
       if(!!this._isURL(args)) {
@@ -106,11 +74,14 @@ class MusicService {
       }
       else {
         if(!server.searchOptions.length || Number.isNaN(Number(args))) {
+          const feedbackOptions = {
+            title: 'Options',
+            thumbnailURL: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+          }
           const options = await YoutubeService.search(args)
           ServerService.clear(server, 'searchOptions')
           ServerService.searchOptions(server, options)
-
-          const feedback = this._generateEmbeds(client, server, options, "Options")
+          const feedback = EmbedHelper.create(feedbackOptions, options, server)
           
           return {
             data: [],
@@ -181,17 +152,7 @@ class MusicService {
       }
 
       args = args.map(id => Number(id))
-
-      ServerService.queueList(server, server
-        .queueList
-        .filter(track => !args.includes(track.id + 1))
-        .map((item, index) => {
-          return {
-            ...item,
-            id: index
-          }
-        })
-      )
+      QueueService.remove(server, args)
       
       if(args.includes(server.currentId + 1)) {
         this._stopPlaying(server)
@@ -220,15 +181,12 @@ class MusicService {
       ServerService.clear(server, 'searchOptions')
       
       songs.data.forEach(song => {
-        ServerService.queueList(server, [
-          ...server.queueList, 
-          {
-            id: server.queueList.length,
-            title: song.title,
-            url: song.url,
-            duration: song.duration
-          }
-        ])
+        QueueService.add(server, {
+          id: server.queueList.length,
+          title: song.title,
+          url: song.url,
+          duration: song.duration
+        })
       })
 
       return TrackService.stackManager(server, msg)
@@ -273,26 +231,6 @@ class MusicService {
     ServerService.clear(server, 'dispatcher')
 
     return TrackService.stackManager(server, msg);
-  }
-
-  async queue(id, msg, client) {
-    const server = await ServerService.serverData(id)
-    const perPage = 10;
-    const calc = server.queueList.length / perPage
-    const totalPages = calc > parseInt(calc)
-      ?  parseInt(calc) + 1
-      : calc
-
-    const embeds = Array.apply(null, Array(totalPages)).map((_, page) => {
-      page += 1
-      const pageSongs = server.queueList.slice(perPage * (page - 1), page * perPage)
-
-      return this._generateEmbeds(client, server, pageSongs, 'Main queue')
-    })  
-
-    return !server.queueList.length
-      ? "No music in queue."
-      : embedMessage(embeds, msg)
   }
 
   async stop(id) {

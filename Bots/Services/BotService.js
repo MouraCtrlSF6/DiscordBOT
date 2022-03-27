@@ -1,9 +1,8 @@
 
-const { MessageAttachment, MessageEmbed } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
 const pagination = require('discord.js-pagination')
 
 class BotService {
-  
   static display(msgContent, msg) {
     try {
       return msg.channel.send(msgContent)
@@ -42,13 +41,26 @@ class BotService {
     }
   }
 
-  static embedMessage(embeds, msg) {
+  static paginateAutoDelete(embeds, msg, server, type) {
     try {
       const pages = embeds.map(page => {
         return new MessageEmbed(page)
       })
 
-      return pagination(msg, pages)
+      const bomb = pagination(msg, pages)
+
+      bomb 
+        .then(result => {
+          if(!!server.autoDeleteMessage[type]) {
+            server.autoDeleteMessage[type].delete()
+          }
+          server.autoDeleteMessage[type] = result
+        })
+        .catch(err => {
+          console.log("Error while sending message: ", err.message)
+        })
+
+      return bomb
     } catch(e) {
       console.error(e.message)
     }

@@ -1,4 +1,5 @@
 const MusicService = require('./Services/MusicService.js')
+const QueueService = require('./Services/QueueService.js')
 const CommandsService = require('../Services/Commands.js')
 
 class Bot {
@@ -27,7 +28,7 @@ class Bot {
   }
 
   queue() {
-    return MusicService.queue(this.server, this.msg, this.client)
+    return QueueService.show(this.server, this.msg, this.client)
   }
 
   play(args) {
