@@ -19,6 +19,18 @@ class BotService {
     }
   }
 
+  static paginate(embeds, msg) {
+    try {
+      const pages = embeds.map(page => {
+        return new MessageEmbed(page)
+      })
+
+      return pagination(msg, pages)
+    } catch(e) {
+      console.error(e.message)
+    }
+  }
+
   static autoDelete(embeds, msg, server, type) {
     try {
       const embed = new MessageEmbed(embeds)

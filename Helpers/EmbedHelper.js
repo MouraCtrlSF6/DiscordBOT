@@ -29,6 +29,24 @@ class EmbedMaker {
       })
     }
   }
+
+  static commandList(options, items) {
+    return {
+      title: options.title || '',
+      description: options.description || '',
+      color: options.color || '#0099ff',
+      thumbnail: {
+        url: options.thumbnailURL
+      },
+      fields: items.map((command) => {
+        return {
+          name: command.callable,
+          value: command.description,
+          inline: false
+        }
+      })
+    }
+  }
 }
 
 module.exports = EmbedMaker
