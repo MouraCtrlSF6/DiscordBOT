@@ -222,7 +222,7 @@ class MusicService {
     const server = await ServerService.serverData(id)
 
     if (!server.queueList[server.currentId + 1]) {
-      this._clear(server)
+      ServerService.clear(server, 'all')
       return "No tracks left."
     }
 
@@ -235,14 +235,14 @@ class MusicService {
 
   async stop(id) {
     const server = await ServerService.serverData(id)
-    this._clear(server)
+    ServerService.clear(server, 'all')
 
     return "Stopped"
   }
 
   async leave(id, channel) {
     const server = await ServerService.serverData(id)
-    this._clear(server)
+    ServerService.clear(server, 'all')
     await channel.leave()
 
     return `Left ${channel.name}`
