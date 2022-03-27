@@ -2,7 +2,7 @@ const ytdl = require('ytdl-core');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl')
 
-class Youtube {
+class YoutubeService {
   constructor() {}
 
   async search(args) {
@@ -72,4 +72,4 @@ class Youtube {
   }
 }
 
-module.exports = new Youtube()
+module.exports = new YoutubeService

@@ -28,7 +28,7 @@ async function loadServers() {
       "autoDeleteMessage": {
         "playing": null,
         "added": null,
-        "options": null
+        "options": null,
       }
     }
   })
