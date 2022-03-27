@@ -96,12 +96,21 @@ class Bot {
     return MusicService.loop(this.server, ...args)
   }
 
-  async exec() {
-    this.commandList = await this._getCommands()
-    const [ command, ...args ] = this.msg.content.split(' ')
+  save(args) {
+    return QueueService.save(this.server, this.msg, ...args)
+  }
 
-    const { exec } = this.commandList.find(c => c.callable === command)
-    return eval(exec)(args);
+  async exec() {
+    try {
+      this.commandList = await this._getCommands()
+      const [ command, ...args ] = this.msg.content.split(' ')
+
+      const { exec } = this.commandList.find(c => c.callable === command)
+      return eval(exec)(args);
+    } catch(e) {
+      console.error(e.message)
+      return e.message
+    }
   }
 }
 
