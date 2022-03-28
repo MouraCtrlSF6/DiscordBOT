@@ -116,11 +116,11 @@ class Bot {
   }
 
   save(args) {
-    return QueueService.save(this.server, this.msg, ...args)
+    return QueueService.save(this.server, this.msg, args.join(' '))
   }
 
   info(args) {
-    return QueueService.info(this.server, this.msg, ...args)
+    return QueueService.info(this.server, this.msg, this.client, args.join(' '))
   }
 
   async exec() {
@@ -128,8 +128,11 @@ class Bot {
       this.commandList = await this._getCommands()
       const [ command, ...args ] = this.msg.content.split(' ')
 
-      const { exec } = this.commandList.find(c => c.callable === command)
-      return eval(exec)(args);
+      const target = this.commandList.find(c => c.callable === command)
+      if(!target) {
+        return "Command not found. Please, checkout the command list by typing --help."
+      }
+      return eval(target.exec)(args);
     } catch(e) {
       console.error(e.message)
       return e.message

@@ -31,6 +31,11 @@ class BotService {
     }
   }
 
+  static embed(embeds, msg) {
+    const embed = new MessageEmbed(embeds)
+    return msg.channel.send(embed)
+  }
+
   static autoDelete(embeds, msg, server, type) {
     try {
       const embed = new MessageEmbed(embeds)

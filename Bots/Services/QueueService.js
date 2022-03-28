@@ -1,8 +1,9 @@
 const ServerService = require('./ServerService')
 const TrackService = require('./TrackService')
+const YoutubeService = require('./YoutubeService')
 const EmbedHelper = require('../../Helpers/EmbedHelper')
 const UserQueueService = require('../../Services/UserQueue')
-const { paginateAutoDelete } = require('./BotService.js')
+const { paginateAutoDelete, embed, paginate } = require('./BotService.js')
 
 class QueueService {
   constructor() {}
@@ -93,23 +94,161 @@ class QueueService {
     }
   }
 
-  async info(id, msg, args) {
+  async getTrackInfo(id, msg, client, track) {
+    try {
+      const server = await ServerService.serverData(id)
+
+      if(!server.queueList.length) {
+        return "No music in queue."
+      }
+      track = track === "current"
+        ? server.currentId
+        : track - 1
+
+      if(!server.queueList[track]) {
+        return "Track not found."
+      }
+
+      const trackInfo = await YoutubeService.getInfo(server.queueList[track].url)
+      const formatedInformation = {
+        blank: {
+          "Artist": trackInfo.videoDetails.media.artist,
+          "Album": trackInfo.videoDetails.media.album,
+          "Song Duration": server.queueList[track].duration + "\n",
+          "Url": server.queueList[track].url,
+          "Arstist Channel": trackInfo.videoDetails.media.artist_url || "Not found",
+        },
+        text: track === server.currentId ? "[current]" : "[allocated on queue]"
+      }
+      const options = {
+        title: trackInfo.videoDetails.media.song,
+        imageURL: trackInfo.videoDetails.thumbnails[0].url,
+        thumbnailURL: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+      }
+
+      const embeds = EmbedHelper.trackInfo(options, formatedInformation)
+      return embed(embeds, msg)
+    } catch(e) {
+      throw e
+    }
+  }
+
+  async getQueuesInfo(msg, client, name) {
+    try {
+      const infos = {
+        user_id: msg.author.id,
+        name,
+      }
+
+      if(!infos.name) {
+        const { data: { data: queues } } = await UserQueueService.list(infos)
+
+        if(!queues.length) {
+          return "You don't have any saved queues at the moment."
+        }
+        const calc = queues.length / 5
+        const pages = calc > parseInt(calc)
+          ? parseInt(calc) + 1
+          : calc
+
+        const embeds = Array.apply(null, Array(pages)).map((_, page) => {
+          const options = {
+            title: `${msg.author.username}'s saved queues`,
+            thumbnailURL: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+          }
+          const pageQueues = queues
+            .slice(page * 10, (page + 1) * 10)
+            .map((queue) => {
+              const created_at = new Date(queue.created_at)
+                .toLocaleDateString()
+                .split('-')
+                .reverse()
+                .join('/')
+              const updated_at = new Date(queue.updated_at)
+                .toLocaleDateString()
+                .split('-')
+                .reverse()
+                .join('/')
+
+              const data = JSON.parse(queue.data)
+              return {
+                blank: queue.name,
+                text: {
+                  "Size": `${queue.size} songs`,
+                  "Created at": created_at,
+                  "Last modified": updated_at,
+                  "First song": data[0].title,
+                  "Last song": data[data.length - 1].title
+                }
+              }
+            })
+          return EmbedHelper.queueInfo(options, pageQueues)
+        })
+
+        return paginate(embeds, msg)
+      }
+
+      const { data: { data: queue } } = await UserQueueService.listByName(infos)
+
+      if(!queue.length) {
+        return `Queue ${infos.name} was not found.`
+      }
+      const calc = JSON.parse(queue[0].data).length / 10
+      const pages = calc > parseInt(calc) 
+        ? parseInt(calc) + 1 
+        : calc
+      const created_at = new Date(queue[0].created_at)
+        .toLocaleDateString()
+        .split('-')
+        .reverse()
+        .join('/')
+      const updated_at = new Date(queue[0].updated_at)
+        .toLocaleDateString()
+        .split('-')
+        .reverse()
+        .join('/')
+
+      const options = {
+        title: infos.name,
+        thumbnailURL: `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`,
+        description: `Size: ${queue[0].size} songs\nCreated at: ${created_at}\nLast modified: ${updated_at}`
+      }
+      const embeds = Array.apply(null, Array(pages)).map((_, page) => {
+        const pageSongs = JSON.parse(queue[0].data).slice(page * 10, (page + 1) * 10)
+        return EmbedHelper.create(options, pageSongs, {}, false)
+      })
+
+      return paginate(embeds, msg)
+    } catch(e) {
+      throw e
+    }
+  }
+
+  async info(id, msg, client, args) {
     try {
       const infoOptions = {
-        current: () => {
-
+        track: (value) => {
+          return this.getTrackInfo(id, msg, client, value)
         }, 
-        queues: () => {
-
-        },
-        queueName: () => {
-
-        },
-        musicId: () => {
-
+        queues: (value) => {
+          return this.getQueuesInfo(msg, client, value)
         }
       }
 
+      if(!args) {
+        return "Please, specify what information should be displayed."
+      }
+      const [ option, value ] = args.split(":")
+
+      if(!Number.isNaN(Number(option)) || option === "current") {
+        return infoOptions.track(option)
+      }
+
+      if(Object.keys(infoOptions).includes(option)) {
+        return infoOptions[option](value)
+      }
+
+      return "Command not found. Please, checkout the command list by typing --help."
     } catch(e) {
       throw e
     }
