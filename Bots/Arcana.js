@@ -100,6 +100,10 @@ class Bot {
     return QueueService.save(this.server, this.msg, ...args)
   }
 
+  info(args) {
+    return QueueService.info(this.server, this.msg, ...args)
+  }
+
   async exec() {
     try {
       this.commandList = await this._getCommands()
