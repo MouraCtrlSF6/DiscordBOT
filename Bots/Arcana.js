@@ -54,7 +54,26 @@ class Bot {
   }
 
   play(args) {
-    return MusicService.play(this.server, args.join(' '), this.msg, this.client)
+    try {
+      args = args.join(' ')
+      const subCommands = {
+        queue: (value) => {
+          return QueueService.play(this.server, this.msg, value)
+        }
+      } 
+  
+      if(args.includes(':')) {
+        const [subCommand, value] = args.split(':')
+  
+        if(!!subCommands[subCommand]) {
+          return subCommands[subCommand](value)
+        }
+      }
+  
+      return MusicService.play(this.server, args, this.msg, this.client)
+    } catch(e) {
+      throw e
+    }
   }
 
   seek(args) {
@@ -98,6 +117,10 @@ class Bot {
 
   save(args) {
     return QueueService.save(this.server, this.msg, ...args)
+  }
+
+  info(args) {
+    return QueueService.info(this.server, this.msg, ...args)
   }
 
   async exec() {

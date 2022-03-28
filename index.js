@@ -81,6 +81,7 @@ client.on('message', async (msg) => {
     display(fBot, msg)
   } catch(e) {
     console.error(e.message)
+    display(e.message, msg)
   } 
 });
 

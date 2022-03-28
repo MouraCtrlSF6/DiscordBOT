@@ -117,7 +117,7 @@ class MusicService {
           }
       }
     } catch(e) {
-      throw e.message
+      throw e
     }
   }
 
@@ -133,11 +133,11 @@ class MusicService {
       ServerService.clear(server, 'dispatcher')
       ServerService.clear(server, 'streamOptions')
       ServerService.currentId(server, Number(args) - 1)
-      
+
       return TrackService.stackManager(server, msg)
     } catch(e) {
-      console.log("Error received: ", e)
-      return e
+      console.log("Error received at seek: ", e.message)
+      throw e
     }
   }
 
@@ -163,8 +163,8 @@ class MusicService {
 
       return `Tracks ${args} sucessfully removed from queue`
     } catch(e) {
-      console.log("Error received: ", e)
-      return e
+      console.log("Error received at remove: ", e.message)
+      throw e
     }
   }
 
@@ -191,8 +191,8 @@ class MusicService {
 
       return TrackService.stackManager(server, msg)
     } catch (e) {
-      console.log("Error received: ", e)
-      return e
+      console.log("Error received at play: ", e.message)
+      throw e
     }
   }
 

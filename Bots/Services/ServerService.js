@@ -25,7 +25,7 @@ class ServerService {
   async connectChannel(server, msg) {
     const { voice } = msg.member
     if (!voice.channelID) {
-      throw "You must be connected to a voice channel to use this command!"
+      throw new Error("You must be connected to a voice channel to use this command!")
     }
 
     const { channel } = voice

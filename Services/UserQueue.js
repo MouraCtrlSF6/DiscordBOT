@@ -11,7 +11,7 @@ class UserQueueService {
     return http.get(`/queues/user/${infos.user_id}/${infos.name}`)
   }
 
-  add(payload) {
+  create(payload) {
     return http.post('/queues/store', payload)
   }
 

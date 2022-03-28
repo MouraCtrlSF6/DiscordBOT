@@ -1,4 +1,5 @@
 const ServerService = require('./ServerService')
+const TrackService = require('./TrackService')
 const EmbedHelper = require('../../Helpers/EmbedHelper')
 const UserQueueService = require('../../Services/UserQueue')
 const { paginateAutoDelete } = require('./BotService.js')
@@ -65,29 +66,72 @@ class QueueService {
       if (!server.queueList.length) {
         return "No music in queue."
       }
-
-      if(!args) {
-        return "Please, provide queue's name."
-      }
-
       const infos = {
         user_id: msg.author.id,
         name: args
       }
+      
+      if(!args) {
+        return "Please, provide queue's name."
+      }
+      const { data: { data: queue } } = await UserQueueService.listByName(infos)
 
-      // const { data: { data } } = await UserQueueService.listByName(infos)
+      if(queue.length) {
+        return "You already have a saved queue with this name."
+      }
 
-      // await UserQueueService.add({
-      //   data: JSON.stringify(server.queueList),
-      //   user_id: infos.user_id,
-      //   name: infos.name,
-      //   size: server.queueList.length,
-      // })
+      await UserQueueService.create({
+        data: JSON.stringify(server.queueList),
+        user_id: infos.user_id,
+        name: infos.name,
+        size: server.queueList.length,
+      })
 
-      // return "Queue added to your playlists!"
-      return "Feature implementation still in progress. Please comeback later!"
+      return "Queue added to your playlists!"
     } catch(e) {
       throw e.message
+    }
+  }
+
+  async info(id, msg, args) {
+    try {
+      const infoOptions = {
+        current: () => {
+
+        }, 
+        queues: () => {
+
+        },
+        queueName: () => {
+
+        },
+        musicId: () => {
+
+        }
+      }
+
+    } catch(e) {
+      throw e
+    }
+  }
+
+  async play(id, msg, queueName) {
+    try {
+      const server = await ServerService.serverData(id)
+      await ServerService.connectChannel(server, msg)
+
+      const infos = {
+        user_id: msg.author.id,
+        name: queueName
+      }
+
+      const { data: { data: queue } } = await UserQueueService.listByName(infos)
+      ServerService.clear(server, 'all')
+      ServerService.queueList(server, JSON.parse(queue[0].data))
+      
+      return TrackService.stackManager(server, msg)
+    } catch(e) {
+      throw e
     }
   }
 }
