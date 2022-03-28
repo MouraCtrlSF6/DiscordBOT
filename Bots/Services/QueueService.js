@@ -1,5 +1,6 @@
 const ServerService = require('./ServerService')
 const EmbedHelper = require('../../Helpers/EmbedHelper')
+const UserQueueService = require('../../Services/UserQueue')
 const { paginateAutoDelete } = require('./BotService.js')
 
 class QueueService {
@@ -55,6 +56,38 @@ class QueueService {
         : paginateAutoDelete(embeds, msg, server, 'queue')
     } catch(e) {
       throw e
+    }
+  }
+
+  async save(id, msg, args) {
+    try {
+      const server = await ServerService.serverData(id)
+      if (!server.queueList.length) {
+        return "No music in queue."
+      }
+
+      if(!args) {
+        return "Please, provide queue's name."
+      }
+
+      const infos = {
+        user_id: msg.author.id,
+        name: args
+      }
+
+      // const { data: { data } } = await UserQueueService.listByName(infos)
+
+      // await UserQueueService.add({
+      //   data: JSON.stringify(server.queueList),
+      //   user_id: infos.user_id,
+      //   name: infos.name,
+      //   size: server.queueList.length,
+      // })
+
+      // return "Queue added to your playlists!"
+      return "Feature implementation still in progress. Please comeback later!"
+    } catch(e) {
+      throw e.message
     }
   }
 }
