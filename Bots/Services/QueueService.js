@@ -8,7 +8,7 @@ const { paginateAutoDelete, embed, paginate } = require('./BotService.js')
 class QueueService {
   constructor() {}
 
-  add(server, content) {
+  push(server, content) {
     try {
       ServerService.queueList(server, [
         ...server.queueList, 

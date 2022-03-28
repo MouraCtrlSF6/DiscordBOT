@@ -20,8 +20,28 @@ class Bot {
 
   list() {
     try {
-      this.commandList.sort((a, b) => {
-        if(a.description.length > b.description.length || b.callable ===  "--help") {
+      const head = this.commandList.filter(command => [
+        "--help", 
+        "--play", 
+        "--queue", 
+        "--stop", 
+        "--leave", 
+        "--pause", 
+        "--resume"
+      ].includes(command.callable))
+      head.sort((a, b) => {
+        if(a.id > b.id || b.callable ===  "--help") {
+          return 1
+        } 
+        if(a.id < b.id) {
+          return -1
+        }
+        return 0
+      })
+
+      const body = this.commandList.filter(command => !head.includes(command))
+      body.sort((a, b) => {
+        if(a.description.length > b.description.length) {
           return 1
         } 
         if(a.description.length < b.description.length) {
@@ -29,13 +49,14 @@ class Bot {
         }
         return 0
       })
+
       const calc = this.commandList.length / 10
       const totalPages = calc > parseInt(calc)
         ?  parseInt(calc) + 1
         : calc
   
       const embeds = Array.apply(null, Array(totalPages)).map((_, page) => {
-        const pageCommands = this.commandList.slice(10 * page, (page + 1) * 10)
+        const pageCommands = [...head, ...body].slice(10 * page, (page + 1) * 10)
         const options = {
           title: 'Command list',
           thumbnailURL: `https://cdn.discordapp.com/avatars/${this.client.user.id}/${this.client.user.avatar}.png`

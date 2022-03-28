@@ -181,7 +181,7 @@ class MusicService {
       ServerService.clear(server, 'searchOptions')
       
       songs.data.forEach(song => {
-        QueueService.add(server, {
+        QueueService.push(server, {
           id: server.queueList.length,
           title: song.title,
           url: song.url,
