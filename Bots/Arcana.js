@@ -118,10 +118,7 @@ class Bot {
   }
 
   leave() {
-    const { voice } = this.msg.member
-    const { channel } = voice
-
-    return MusicService.leave(this.server, channel)
+    return MusicService.leave(this.server)
   } 
 
   stop() {

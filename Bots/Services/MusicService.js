@@ -50,6 +50,15 @@ class MusicService {
         if(!msg.embeds[0]) {
           throw "Sorry, can you repeat?"
         }
+
+        if(YoutubeService.isPlaylist(args)) {
+          const items = await YoutubeService.playlist(args)
+
+          return {
+            data: items,
+            feedback: null
+          }
+        }
         
         const info = await YoutubeService.getInfo(msg.embeds[0].url)
         const time = new Date(null)
@@ -240,9 +249,14 @@ class MusicService {
     return "Stopped"
   }
 
-  async leave(id, channel) {
+  async leave(id) {
     const server = await ServerService.serverData(id)
+    
+    if(!server.connection) {
+      return "Not in a voice channel now."
+    }
     ServerService.clear(server, 'all')
+    const { channel } = server.connection
     await channel.leave()
 
     return `Left ${channel.name}`

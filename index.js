@@ -1,16 +1,16 @@
 require('dotenv').config()
 const fs = require('fs')
 const Discord = require('discord.js')
-const Bot = require('./Bots/Arcana.js')
+const Arcana = require('./Bots/Arcana.js')
 
-const ServerService = require('./Services/Servers.js')
+const Servers = require('./Services/Servers.js')
 const { display } = require('./Bots/Services/BotService.js')
 const { BOT_TOKEN } = process.env
 
 const client = new Discord.Client()
 
 async function loadServers() {
-  const { data: { data } } = await ServerService.listAll()
+  const { data: { data } } = await Servers.listAll()
   const servers = data.map((server) => {
     return {
       "id": server.guild_id,
@@ -29,7 +29,8 @@ async function loadServers() {
         "playing": null,
         "added": null,
         "options": null,
-      }
+      },
+      "inactiveTime": 0
     }
   })
 
@@ -47,7 +48,7 @@ async function loadServers() {
 
 client.on('guildCreate', async (guild) => {
   try {
-    await ServerService.join({
+    await Servers.join({
       guild_id: guild.id,
       name: guild.name
     })
@@ -61,7 +62,7 @@ client.on('guildCreate', async (guild) => {
 
 client.on('guildDelete', async (guild) => {
   try {
-    await ServerService.leave(guild.id)
+    await Servers.leave(guild.id)
     console.log('Left ', guild.name)
   } catch(e) {
     console.error(e.message)
@@ -77,8 +78,9 @@ client.on('message', async (msg) => {
     if(!msg.content.startsWith('--') || client.user.id === msg.author.id) 
       return;
 
-    const fBot = await new Bot(client, msg, msg.guild.id).exec()
-    display(fBot, msg)
+    const arcana = new Arcana(client, msg, msg.guild.id)
+    const feedback = await arcana.exec()
+    display(feedback, msg)
   } catch(e) {
     console.error(e.message)
     display(e.message, msg)
