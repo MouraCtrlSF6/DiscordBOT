@@ -30,7 +30,6 @@ async function loadServers() {
         "added": null,
         "options": null,
       },
-      "inactiveTime": 0
     }
   })
 

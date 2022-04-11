@@ -245,7 +245,7 @@ class MusicService {
   async stop(id) {
     const server = await ServerService.serverData(id)
     ServerService.clear(server, 'all')
-
+    
     return "Stopped"
   }
 
@@ -255,10 +255,9 @@ class MusicService {
     if(!server.connection) {
       return "Not in a voice channel now."
     }
-    ServerService.clear(server, 'all')
     const { channel } = server.connection
     await channel.leave()
-
+    ServerService.clear(server, 'all')
     return `Left ${channel.name}`
   }
 

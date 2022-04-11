@@ -1,6 +1,5 @@
 const fs = require('fs')
 const FileHelper = require('../../Helpers/FileHelper.js')
-
 class ServerService {
   constructor() {
     this.servers = {}
@@ -30,40 +29,6 @@ class ServerService {
 
     const { channel } = voice
     server.connection = await channel.join()
-    this.ctrlTime(server)
-  }
-
-  async wait(seconds) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve(true)
-      }, seconds * 1100)
-    })
-  }
-
-  async ctrlTime(server) {
-    if(!server.connection) {
-      return;
-    }
-
-    if(!!server.dispatcher) {
-      return;
-    }
-
-    // while(true) {
-    //   await this.wait(1)
-
-    //   server.inactiveTime += 1
-
-    //   switch(time) {
-    //     case 300:
-    //       disconect()
-    //     case 150:
-    //       if(NO_USERS_IN_CHANNEL){
-    //         disconect()
-    //       }
-    //   }
-    // }
   }
 
   clear(server, option) {
@@ -77,7 +42,7 @@ class ServerService {
         seek: 0,
         volume: 1
       },
-      dispatcher: null
+      dispatcher: null,
     }
 
     const clearOptions = {
