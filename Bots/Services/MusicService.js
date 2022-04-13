@@ -153,6 +153,7 @@ class MusicService {
   async remove(id, msg, args) {
     try {
       const server = await ServerService.serverData(id)
+      const currentId = server.currentId
 
       for(let id of args) {
         if(Number.isNaN(Number(id))) {
@@ -161,10 +162,21 @@ class MusicService {
       }
 
       args = args.map(id => Number(id))
-      QueueService.remove(server, args)
       
-      if(args.includes(server.currentId + 1)) {
-        this._stopPlaying(server)
+      QueueService.remove(server, args)
+
+      const actualTrack = server.queueList[server.currentId]
+
+      const track = server
+        .queueList
+        .find(track => track.name === actualTrack.name)
+
+      if(track) {
+        ServerService.currentId(server, track.id)
+      }  
+        
+      if(args.includes(currentId + 1)) {
+        ServerService.clear(server, 'dispatcher')
         display(`Tracks ${args} sucessfully removed from queue`, msg)
 
         return TrackService.stackManager(server, msg)

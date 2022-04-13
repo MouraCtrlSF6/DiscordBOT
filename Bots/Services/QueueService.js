@@ -273,6 +273,34 @@ class QueueService {
       throw e
     }
   }
+
+  async shuffle(id, msg, args) {
+    try {
+      const server = await ServerService.serverData(id)
+      const sampleQueue = JSON.parse(JSON.stringify(server.queueList))
+      const actualTrack = sampleQueue[server.currentId]
+
+      for (let i = 0; i < 5; i++) {
+        sampleQueue.sort(() => {
+          return Math.floor(Math.random() * 3) - 1
+        })
+      } 
+
+      ServerService.queueList(server, sampleQueue)
+      this.remove(server, [])
+
+      const track = sampleQueue
+        .find(track => track.name === actualTrack.name)
+
+      ServerService.currentId(server, track.id)
+      
+      return "Shuffled"
+    }
+    catch(e) {
+      console.log("Error on shuffle: ", e.message)
+      throw e
+    }
+  }
 }
 
 module.exports = new QueueService

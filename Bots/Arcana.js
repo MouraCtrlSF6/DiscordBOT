@@ -97,6 +97,11 @@ class Bot {
     }
   }
 
+  shuffle(args) {
+    console.log("SHUFFLE REQUEST")
+    return QueueService.shuffle(this.server, this.msg, ...args)
+  }
+
   seek(args) {
     return MusicService.seek(this.server, this.msg, ...args)
   }
