@@ -57,7 +57,7 @@ class TrackService {
       await this._playSound(stream, server, msg)
 
       if (!!server.queueList[server.currentId + 1] || !!Object.keys(server.loops).length) {
-        server.currentId = ServerService.nextId(server)
+        ServerService.currentId(server, ServerService.nextId(server))
         await this.stackManager(server, msg)
       }
     } catch (err) {

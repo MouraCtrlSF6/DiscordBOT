@@ -19,18 +19,22 @@ class QueueService {
     }
   }
 
+  _order(unordered) {
+    return unordered.map((item, index) => {
+      return {
+        ...item,
+        id: index
+      }
+    })
+  }
+
   remove(server, ids) {
     try {
-      ServerService.queueList(server, server
+      const filtered = server
         .queueList
         .filter(track => !ids.includes(track.id + 1))
-        .map((item, index) => {
-          return {
-            ...item,
-            id: index
-          }
-        })
-      )
+        
+      ServerService.queueList(server, this._order(filtered))
     } catch(e) {
       throw e
     }
@@ -43,6 +47,8 @@ class QueueService {
       const totalPages = calc > parseInt(calc)
         ?  parseInt(calc) + 1
         : calc
+
+      console.log("Queue: ", server.queueList)
   
       const embeds = Array.apply(null, Array(totalPages)).map((_, page) => {
         const pageSongs = server.queueList.slice(10 * page, (page + 1) * 10)
@@ -118,7 +124,7 @@ class QueueService {
           "Url": server.queueList[track].url,
           "Arstist Channel": trackInfo.videoDetails.media.artist_url || "Not found",
         },
-        text: track === server.currentId ? "[current]" : "[allocated on queue]"
+        text: server.queueList[track].isCurrent ? "[current]" : "[allocated on queue]"
       }
       const options = {
         title: trackInfo.videoDetails.media.song,
@@ -265,6 +271,11 @@ class QueueService {
       }
 
       const { data: { data: queue } } = await UserQueueService.listByName(infos)
+      
+      if(!queue.length) {
+        return `You currently don't have any saved queue named "${infos.name}"`
+      }
+
       ServerService.clear(server, 'all')
       ServerService.queueList(server, JSON.parse(queue[0].data))
       
@@ -274,25 +285,22 @@ class QueueService {
     }
   }
 
-  async shuffle(id, msg, args) {
+  async shuffle(id) {
     try {
       const server = await ServerService.serverData(id)
       const sampleQueue = JSON.parse(JSON.stringify(server.queueList))
-      const actualTrack = sampleQueue[server.currentId]
 
       for (let i = 0; i < 5; i++) {
         sampleQueue.sort(() => {
           return Math.floor(Math.random() * 3) - 1
         })
       } 
+      
+      ServerService.queueList(server, this._order(sampleQueue))
 
-      ServerService.queueList(server, sampleQueue)
-      this.remove(server, [])
+      const actualTrack = server.queueList.find(track => track.isCurrent)
 
-      const track = sampleQueue
-        .find(track => track.name === actualTrack.name)
-
-      ServerService.currentId(server, track.id)
+      ServerService.currentId(server, actualTrack.id)
       
       return "Shuffled"
     }

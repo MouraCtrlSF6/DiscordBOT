@@ -165,14 +165,12 @@ class MusicService {
       
       QueueService.remove(server, args)
 
-      const actualTrack = server.queueList[server.currentId]
-
-      const track = server
+      const actualTrack = server
         .queueList
-        .find(track => track.name === actualTrack.name)
+        .find(track => track.isCurrent)
 
-      if(track) {
-        ServerService.currentId(server, track.id)
+      if(actualTrack) {
+        ServerService.currentId(server, actualTrack.id)
       }  
         
       if(args.includes(currentId + 1)) {
@@ -206,7 +204,8 @@ class MusicService {
           id: server.queueList.length,
           title: song.title,
           url: song.url,
-          duration: song.duration
+          duration: song.duration,
+          isCurrent: server.queueList.length === server.currentId
         })
       })
 

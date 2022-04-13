@@ -104,11 +104,23 @@ class ServerService {
   }
 
   queueList(server, value) {
+    value = value.map((track) => {
+      if(Object.keys(track).includes("isCurrent")) {
+        return track
+      }
+
+      return {
+        ...track, 
+        isCurrent: track.id === server.currentId
+      }
+    })
     server.queueList = value
   }
 
   currentId(server, value) {
+    server.queueList[server.currentId].isCurrent = false
     server.currentId = value
+    server.queueList[server.currentId].isCurrent = true
   }
 
   streamOptions(server, value) {
