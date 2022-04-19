@@ -191,6 +191,7 @@ class MusicService {
     try {
       const server = await ServerService.serverData(id)
       await ServerService.connectChannel(server, msg)
+      
       const songs = await this._getSongs(server, args, msg, client)
 
       if (!!songs.feedback) {

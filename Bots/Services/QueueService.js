@@ -48,8 +48,6 @@ class QueueService {
         ?  parseInt(calc) + 1
         : calc
 
-      console.log("Queue: ", server.queueList)
-  
       const embeds = Array.apply(null, Array(totalPages)).map((_, page) => {
         const pageSongs = server.queueList.slice(10 * page, (page + 1) * 10)
         const options = {
@@ -306,6 +304,110 @@ class QueueService {
     }
     catch(e) {
       console.log("Error on shuffle: ", e.message)
+      throw e
+    }
+  }
+
+  async add(id, msg, args) {
+    try {
+      if(!args.includes(':')) {
+        return "Please, specify the saved queue's name."
+      }
+      args = args.split(":")
+      const [ queueName, option ] = args
+      const infos = {
+        user_id: msg.author.id,
+        name: queueName
+      }
+
+      const { data: { data: queue } } = await UserQueueService.listByName(infos)
+      
+      if(!queue.length) {
+        return `You currently don't have any saved queue named "${infos.name}"`
+      }
+
+      const commands = {
+        "queue": async() => {
+          const server = await ServerService.serverData(id)
+          let songList = JSON.parse(queue[0].data)
+          songList.push(...server.queueList)
+          songList = songList.map((song) => {
+            return {
+              ...song,
+              isCurrent: false
+            }
+          })
+          songList = this._order(songList)
+
+          const payload = {
+            ...queue[0],
+            data: JSON.stringify(songList),
+            size: songList.length
+          }
+
+          const response = await UserQueueService.update(infos, payload)
+          return response.data.status === 200
+            ? `Main queue successfully added to ${queue[0].name}!`
+            : `An error has occurred. Please, try again later.`
+        },
+        "current": async() => {
+          const server = await ServerService.serverData(id)
+          const track = server.queueList[server.currentId]
+          const songList = JSON.parse(queue[0].data)
+          songList.push({ 
+            ...track,
+            id: queue[0].length,
+            isCurrent: false
+          })
+
+          const payload = { 
+            ...queue[0], 
+            data: JSON.stringify(songList),
+            size: queue[0].size + 1
+          }
+
+          const response = await UserQueueService.update(infos, payload)
+          return response.data.status === 200
+            ? `${track.title} successfully added to ${queue[0].name}!`
+            : `An error has occurred. Please, try again later.`
+        }
+      }
+
+      const trackId = async(track_id) => {  
+        track_id -= 1
+        if(Number.isNaN(Number(track_id))) {
+          return "Please, provide a valid id"
+        }
+
+        const server = await ServerService.serverData(id)
+        if(!server.queueList[track_id]) {
+          return `Track ${track_id} was not found on queue.`
+        }
+
+        const track = server.queueList[track_id]
+        const songList = JSON.parse(queue[0].data)
+        songList.push({ 
+          ...track,
+          id: queue[0].length,
+          isCurrent: false
+        })
+        const payload = { 
+          ...queue[0], 
+          data: JSON.stringify(songList),
+          size: queue[0].size + 1
+        }
+
+        const response = await UserQueueService.update(infos, payload)
+
+        return response.data.status === 200
+          ? `${track.title} successfully added to ${queue[0].name}!`
+          : `An error has occurred. Please, try again later.`
+      }
+
+      return Object.keys(commands).includes(option)
+        ? commands[option]()
+        : trackId(option)
+    } catch(e) {
       throw e
     }
   }

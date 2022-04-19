@@ -26,7 +26,7 @@ class EmbedMaker {
 
         return {
           name: `${songId}: ${song.title}`,
-          value: `${infos}   ${server.queueList[song.id].isCurrent && current
+          value: `${infos}   ${server.currentId === song.id && current
             ? "[current]" 
             : ""
           }`,

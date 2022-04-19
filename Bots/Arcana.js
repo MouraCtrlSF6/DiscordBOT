@@ -98,7 +98,6 @@ class Bot {
   }
 
   shuffle(args) {
-    console.log("SHUFFLE REQUEST")
     return QueueService.shuffle(this.server, this.msg, ...args)
   }
 
@@ -144,6 +143,10 @@ class Bot {
 
   info(args) {
     return QueueService.info(this.server, this.msg, this.client, args.join(' '))
+  }
+
+  add(args) {
+    return QueueService.add(this.server, this.msg, args.join(' '))
   }
 
   async exec() {
