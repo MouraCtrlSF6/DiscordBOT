@@ -276,6 +276,7 @@ class QueueService {
 
       ServerService.clear(server, 'all')
       ServerService.queueList(server, JSON.parse(queue[0].data))
+      ServerService.currentId(server, 0)
       
       return TrackService.stackManager(server, msg)
     } catch(e) {
