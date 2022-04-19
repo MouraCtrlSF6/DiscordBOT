@@ -94,7 +94,7 @@ class QueueService {
 
       return "Queue added to your playlists!"
     } catch(e) {
-      throw e.message
+      throw e
     }
   }
 

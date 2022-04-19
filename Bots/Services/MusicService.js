@@ -48,7 +48,7 @@ class MusicService {
     try {
       if(!!this._isURL(args)) {
         if(!msg.embeds[0]) {
-          throw "Sorry, can you repeat?"
+          throw new Error("Sorry, can you repeat?")
         }
 
         if(YoutubeService.isPlaylist(args)) {
