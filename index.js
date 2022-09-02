@@ -76,7 +76,7 @@ client.on('message', async (msg) => {
   try {
     if(!msg.content.startsWith('--') || client.user.id === msg.author.id) 
       return;
-
+      
     const arcana = new Arcana(client, msg, msg.guild.id)
     const feedback = await arcana.exec()
     display(feedback, msg)
