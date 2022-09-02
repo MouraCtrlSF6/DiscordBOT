@@ -1,0 +1,5 @@
+{
+  "appService.showBuildDuringDeployPrompt": false,
+  "appService.defaultWebAppToDeploy": "/subscriptions/262922e8-31c3-40fc-99f1-63ea73fcf3d7/microsoft.web/sites/subscriptions/262922e8-31c3-40fc-99f1-63ea73fcf3d7/resourceGroups/appsvc_linux_centralus_basic/providers/Microsoft.Web/sites/arcana-api",
+  "appService.deploySubpath": "."
+}

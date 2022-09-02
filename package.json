@@ -18,7 +18,7 @@
     ]
   },
   "engines": {
-    "node": "14.x"
+    "node": "14.15.0"
   },
   "author": "Lucas Moura da Silva",
   "license": "ISC",
